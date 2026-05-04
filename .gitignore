@@ -63,3 +63,6 @@ backups/
 
 # Uploads de usuários (documentos e selfies ficam fora do projeto em /data/)
 uploads/
+
+# Certificados TLS — nunca commitar chave privada
+frontend/certs/

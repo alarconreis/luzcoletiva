@@ -87,6 +87,7 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - ./frontend/certs:/etc/caddy/certs:ro
 
 volumes:
   pgdata:

@@ -1,4 +1,6 @@
 luzcoletiva.com.br {
+    tls /etc/caddy/certs/origin.crt /etc/caddy/certs/origin.key
+
     encode gzip zstd
 
     handle /api/* {
@@ -22,6 +24,6 @@ luzcoletiva.com.br {
 }
 
 www.luzcoletiva.com.br {
+    tls /etc/caddy/certs/origin.crt /etc/caddy/certs/origin.key
     redir https://luzcoletiva.com.br{uri} permanent
 }
-
