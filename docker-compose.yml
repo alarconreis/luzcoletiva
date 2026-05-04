@@ -1,0 +1,100 @@
+# Luz Coletiva — Orquestração local e VPS
+# Uso: docker compose up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: luz-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-luzcoletiva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-luzcoletiva}
+      POSTGRES_DB: ${POSTGRES_DB:-luzcoletiva}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - luz-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-luzcoletiva}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: luz-redis
+    restart: unless-stopped
+    networks:
+      - luz-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: luz-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - luz_verifications:/data/verifications
+      - uploads_data:/app/uploads
+    networks:
+      - luz-net
+    expose:
+      - "8000"
+    # Em desenvolvimento, exponha a porta para localhost:
+    #ports:
+    #  - "8000:8000"
+
+  worker:
+    build:
+      context: ./backend
+    container_name: luz-worker
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - backend
+      - redis
+    volumes:
+      - luz_verifications:/data/verifications
+      - uploads_data:/app/uploads
+    networks:
+      - luz-net
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: luz-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - luz-net
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  luz_verifications:
+  caddy_data:
+  caddy_config:
+  uploads_data:
+
+networks:
+  luz-net:
+    driver: bridge

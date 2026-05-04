@@ -1,0 +1,65 @@
+# ===== Luz Coletiva — gitignore =====
+
+# Variáveis de ambiente (NUNCA commitar segredos)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker / volumes locais
+pgdata/
+redisdata/
+
+# Coverage / testes
+.coverage
+coverage/
+htmlcov/
+
+# Backups operacionais do servidor (não pertencem ao código)
+backups/
+
+# Arquivos .bak criados manualmente durante manutenção
+*.bak
+*.bak-*
+
+# Claude Code — configurações locais da máquina
+.claude/settings.local.json
+
+# Uploads de usuários (documentos e selfies ficam fora do projeto em /data/)
+uploads/
