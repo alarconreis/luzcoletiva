@@ -11,6 +11,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import safe_path_under
 from app.core.limiter import limiter
 from app.core.rbac import require_admin, require_moderator
 from app.models.audit import AdminAuditLog
@@ -359,8 +360,8 @@ def view_selfie(
     target = db.query(User).filter(User.id == user_id).first()
     if not target or not target.selfie_path:
         raise HTTPException(404, "Selfie não encontrada")
-    path = pathlib.Path("/app/uploads") / target.selfie_path
-    if not path.exists():
+    path = safe_path_under(pathlib.Path("/app/uploads"), target.selfie_path)
+    if path is None or not path.exists():
         raise HTTPException(404, "Arquivo não encontrado")
     _log_action(db, actor, "view_selfie", target, None, _client_ip(request))
     return FileResponse(str(path))
@@ -379,8 +380,8 @@ def view_doc_photo(
     target = db.query(User).filter(User.id == user_id).first()
     if not target or not target.doc_photo_path:
         raise HTTPException(404, "Foto do documento não encontrada")
-    path = pathlib.Path("/app/uploads") / target.doc_photo_path
-    if not path.exists():
+    path = safe_path_under(pathlib.Path("/app/uploads"), target.doc_photo_path)
+    if path is None or not path.exists():
         raise HTTPException(404, "Arquivo não encontrado")
     _log_action(db, actor, "view_doc_photo", target, None, _client_ip(request))
     return FileResponse(str(path))
@@ -862,9 +863,9 @@ def view_assisted_photo(
     profile = db.query(AssistedProfile).filter(AssistedProfile.id == profile_id).first()
     if not profile or not profile.photo_path:
         raise HTTPException(404, "Foto não encontrada")
-    path = pathlib.Path(UPLOAD_DIR) / profile.photo_path
-    if not path.exists():
-        raise HTTPException(404, "Arquivo não encontrado em disco")
+    path = safe_path_under(pathlib.Path(UPLOAD_DIR), profile.photo_path)
+    if path is None or not path.exists():
+        raise HTTPException(404, "Arquivo não encontrado")
     _log_action(db, actor, "view_assisted_photo", None, f"profile_id={profile_id}", _client_ip(request))
     return FileResponse(str(path))
 

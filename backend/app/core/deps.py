@@ -31,3 +31,23 @@ def get_current_user(
     if not user:
         raise credentials_error
     return user
+
+
+# ==================== Path traversal defense ====================
+from pathlib import Path as _Path
+
+def safe_path_under(base: _Path, filename: str | None) -> _Path | None:
+    """
+    Resolve `base/filename` e confirma que o resultado está dentro de `base`.
+    Retorna None se filename for inválido, vazio, ou tentar escapar do diretório.
+    Use sempre que servir arquivos cujo path vem do banco/usuário.
+    """
+    if not filename:
+        return None
+    try:
+        candidate = (base / filename).resolve()
+        base_resolved = base.resolve()
+        candidate.relative_to(base_resolved)
+        return candidate
+    except (ValueError, OSError):
+        return None

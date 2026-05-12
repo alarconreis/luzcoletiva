@@ -17,6 +17,14 @@ from app.core.security import create_access_token
 from app.models.user import User
 from app.schemas.user import UserOut
 
+
+def _safe_log(s: str, max_len: int = 80) -> str:
+    """Remove CR/LF (CRLF injection) e trunca."""
+    if not s:
+        return ""
+    return s.replace("\n", "\\n").replace("\r", "\\r")[:max_len]
+
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/scan", tags=["scan"])
@@ -60,12 +68,12 @@ def scan_auth(
     user_agent = request.headers.get("user-agent", "")[:300]
 
     if not _ip_allowed(ip):
-        logger.warning(f"scan_auth: IP not allowed: {ip} (UA: {user_agent[:80]})")
+        logger.warning(f"scan_auth: IP not allowed: {_safe_log(ip)} (UA: {_safe_log(user_agent)})")
         raise HTTPException(status_code=403, detail="Forbidden")
 
     token = request.headers.get("x-scan-token", "")
     if not token or not secrets.compare_digest(token, settings.SCAN_TOKEN):
-        logger.warning(f"scan_auth: invalid token from {ip} (UA: {user_agent[:80]})")
+        logger.warning(f"scan_auth: invalid token from {_safe_log(ip)} (UA: {_safe_log(user_agent)})")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user = db.query(User).filter(User.id == settings.SCAN_USER_ID).first()
@@ -89,7 +97,7 @@ def scan_auth(
         max_age=7200,  # 2h
     )
 
-    logger.warning(f"scan_auth: SUCCESS — ip={ip} user_id={user.id} ua={user_agent[:80]}")
+    logger.warning(f"scan_auth: SUCCESS — ip={_safe_log(ip)} user_id={user.id} ua={_safe_log(user_agent)}")
 
     # Log em admin_audit_log
     try:

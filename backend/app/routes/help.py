@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.deps import safe_path_under
 from app.core.limiter import limiter
 from app.core.moderation import check_message
 from app.core.uploads import UPLOAD_DIR, save_upload
@@ -236,9 +237,9 @@ def get_document(
         raise HTTPException(403, "Acesso negado")
     if not req.document_path:
         raise HTTPException(404, "Nenhum documento anexado")
-    path = UPLOAD_DIR / req.document_path
-    if not path.exists():
-        raise HTTPException(404, "Arquivo não encontrado no servidor")
+    path = safe_path_under(UPLOAD_DIR, req.document_path)
+    if path is None or not path.exists():
+        raise HTTPException(404, "Arquivo não encontrado")
     return FileResponse(str(path))
 
 
