@@ -178,6 +178,20 @@ def admin_verify_pending(count: int) -> tuple[str, str, str]:
     return subject, html, text
 
 
+def password_reset(name: str, reset_url: str) -> tuple[str, str, str]:
+    first = name.split()[0]
+    subject = "Redefinição de senha — Luz Coletiva"
+    html = _wrap(f"""
+        <h1 style="font-size:24px;color:#212121;margin:0 0 16px 0;font-weight:700;">Redefinir senha</h1>
+        <p style="font-size:16px;line-height:1.6;color:#616161;">Olá {first}, recebemos uma solicitação para redefinir a senha da sua conta no Luz Coletiva.</p>
+        <p style="font-size:16px;line-height:1.6;color:#616161;">Clique no botão abaixo. O link é válido por <strong>30 minutos</strong>.</p>
+        {_btn("Redefinir minha senha", reset_url, "#4FC3F7", "#fff")}
+        <p style="font-size:14px;color:#9E9E9E;margin-top:16px;line-height:1.5;">Se você não solicitou a redefinição, ignore este e-mail — sua senha continua a mesma.</p>
+    """, preheader="Redefina sua senha no Luz Coletiva")
+    text = f"Olá {first}, redefina sua senha em: {reset_url}\n\nO link expira em 30 minutos. Se não foi você, ignore este e-mail."
+    return subject, html, text
+
+
 def admin_backup_failed(error_excerpt: str) -> tuple[str, str, str]:
     subject = "[ADMIN] ⚠️ Backup do Postgres falhou"
     html = _wrap(f"""
@@ -187,4 +201,133 @@ def admin_backup_failed(error_excerpt: str) -> tuple[str, str, str]:
         <p style="font-size:14px;color:#616161;line-height:1.6;">Verifique <code>/var/log/luz-backup.log</code> na VPS para detalhes.</p>
     """, preheader="Backup falhou — verificar log")
     text = f"Backup falhou. Trecho do erro:\n{error_excerpt}\n\nVerifique /var/log/luz-backup.log na VPS."
+    return subject, html, text
+
+
+
+# ============================================
+# Templates de logística (Fase 2)
+# ============================================
+
+def shipping_method_chosen(requester_name: str, method: str, request_title: str, request_id: int):
+    from app.core.config import settings
+    base = settings.APP_BASE_URL
+    method_label = "Correios (PAC ou Sedex)" if method == "correios" else "Ponto de retirada"
+    next_step = (
+        "Preencha seu endereço de entrega na plataforma para o helper enviar pelos Correios."
+        if method == "correios"
+        else "Descreva o ponto de retirada que você prefere (ex: agência dos Correios próxima)."
+    )
+    subject = "[Luz Coletiva] Próximo passo: informar local para entrega"
+    html = f"""
+    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#212121;">
+      <h2 style="color:#1565C0;margin:0 0 16px;">Olá, {requester_name}!</h2>
+      <p>O helper aceito do seu pedido <strong>{request_title}</strong> escolheu o método de entrega:</p>
+      <p style="background:#E1F5FE;padding:12px;border-radius:8px;font-weight:600;">{method_label}</p>
+      <p>{next_step}</p>
+      <p style="margin-top:24px;">
+        <a href="{base}/help-requests/{request_id}" style="background:#1565C0;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Acessar pedido</a>
+      </p>
+      <p style="margin-top:24px;font-size:12px;color:#757575;">Luz Coletiva — Iluminando vidas juntos</p>
+    </div>
+    """
+    text = f"Olá {requester_name}, o helper escolheu {method_label}. {next_step} Acesse: {base}/help-requests/{request_id}"
+    return subject, html, text
+
+
+def shipping_address_provided(helper_name: str, method: str, request_title: str, request_id: int):
+    from app.core.config import settings
+    base = settings.APP_BASE_URL
+    next_step = (
+        "Acesse o pedido para ver o endereço completo, comprar a etiqueta dos Correios e anexar o código de rastreio."
+        if method == "correios"
+        else "Acesse o pedido para ver o ponto de retirada combinado e enviar para lá."
+    )
+    subject = "[Luz Coletiva] Endereço informado — pronto para envio"
+    html = f"""
+    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#212121;">
+      <h2 style="color:#1565C0;margin:0 0 16px;">Olá, {helper_name}!</h2>
+      <p>O solicitante do pedido <strong>{request_title}</strong> informou o local para entrega.</p>
+      <p>{next_step}</p>
+      <p style="background:#FFF8E1;padding:12px;border-radius:8px;font-size:13px;color:#5D4037;">
+        <strong>Lembrete:</strong> ao escolher Correios, você se compromete a pagar o frete (R$ 15–35 típico, varia com peso e distância).
+      </p>
+      <p style="margin-top:24px;">
+        <a href="{base}/help-requests/{request_id}" style="background:#1565C0;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Acessar pedido</a>
+      </p>
+      <p style="margin-top:24px;font-size:12px;color:#757575;">Luz Coletiva — Iluminando vidas juntos</p>
+    </div>
+    """
+    text = f"Olá {helper_name}, o solicitante informou o local. {next_step} Acesse: {base}/help-requests/{request_id}"
+    return subject, html, text
+
+
+def package_shipped(requester_name: str, tracking_code: str, request_title: str, request_id: int):
+    from app.core.config import settings
+    base = settings.APP_BASE_URL
+    correios_url = f"https://www.linkcorreios.com.br/?id={tracking_code}"
+    subject = f"[Luz Coletiva] Pedido enviado! Código: {tracking_code}"
+    html = f"""
+    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#212121;">
+      <h2 style="color:#81C784;margin:0 0 16px;">Olá, {requester_name}! Pedido a caminho</h2>
+      <p>O helper enviou o item do seu pedido <strong>{request_title}</strong>.</p>
+      <p style="background:#E8F5E9;padding:16px;border-radius:8px;">
+        <strong>Código de rastreio:</strong><br>
+        <span style="font-family:monospace;font-size:18px;letter-spacing:1px;">{tracking_code}</span>
+      </p>
+      <p>Acompanhe diretamente nos Correios:</p>
+      <p>
+        <a href="{correios_url}" style="background:#FFD54F;color:#212121;padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Rastrear nos Correios</a>
+      </p>
+      <p style="margin-top:24px;">Quando o pedido chegar, lembre de confirmar o recebimento na plataforma:</p>
+      <p>
+        <a href="{base}/help-requests/{request_id}" style="background:#1565C0;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Confirmar recebimento</a>
+      </p>
+      <p style="margin-top:16px;font-size:13px;color:#5D4037;">
+        Se em 7 dias você não confirmar, o pedido é fechado automaticamente.
+      </p>
+      <p style="margin-top:24px;font-size:12px;color:#757575;">Luz Coletiva — Iluminando vidas juntos</p>
+    </div>
+    """
+    text = f"Olá {requester_name}, pedido enviado. Rastreio: {tracking_code}. Confirme em {base}/help-requests/{request_id}"
+    return subject, html, text
+
+
+def delivery_confirmed(helper_name: str, request_title: str, request_id: int):
+    from app.core.config import settings
+    base = settings.APP_BASE_URL
+    subject = "[Luz Coletiva] Recebimento confirmado — obrigado!"
+    html = f"""
+    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#212121;">
+      <h2 style="color:#81C784;margin:0 0 16px;">Olá, {helper_name}! Recebimento confirmado</h2>
+      <p>O solicitante do pedido <strong>{request_title}</strong> confirmou que recebeu o item.</p>
+      <p style="background:#E8F5E9;padding:16px;border-radius:8px;">
+        Obrigado por iluminar a vida de alguém. Sua ajuda chegou.
+      </p>
+      <p style="margin-top:24px;">
+        <a href="{base}/help-requests/{request_id}" style="background:#1565C0;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Acessar pedido</a>
+      </p>
+      <p style="margin-top:24px;font-size:12px;color:#757575;">Luz Coletiva — Iluminando vidas juntos</p>
+    </div>
+    """
+    text = f"Olá {helper_name}, o solicitante confirmou o recebimento. Obrigado por iluminar uma vida! {base}/help-requests/{request_id}"
+    return subject, html, text
+
+
+def delivery_auto_confirmed(name: str, request_title: str, request_id: int):
+    from app.core.config import settings
+    base = settings.APP_BASE_URL
+    subject = "[Luz Coletiva] Pedido fechado automaticamente após 7 dias"
+    html = f"""
+    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#212121;">
+      <h2 style="color:#1565C0;margin:0 0 16px;">Olá, {name}!</h2>
+      <p>O pedido <strong>{request_title}</strong> foi marcado como entregue automaticamente, pois passaram 7 dias desde o envio sem confirmação manual.</p>
+      <p>Se houver algum problema com o item, entre em contato pelo chat ou abra uma denúncia.</p>
+      <p style="margin-top:24px;">
+        <a href="{base}/help-requests/{request_id}" style="background:#1565C0;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Acessar pedido</a>
+      </p>
+      <p style="margin-top:24px;font-size:12px;color:#757575;">Luz Coletiva — Iluminando vidas juntos</p>
+    </div>
+    """
+    text = f"Olá {name}, o pedido {request_title} foi auto-confirmado após 7 dias. Acesse: {base}/help-requests/{request_id}"
     return subject, html, text

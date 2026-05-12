@@ -6,7 +6,7 @@ role:         autorização (user | moderator | admin)
 trust_level:  score de confiabilidade do solicitante (novo → parceiro_validado)
 """
 import enum
-from sqlalchemy import Column, DateTime, Enum, Float, Integer, String, Boolean
+from sqlalchemy import Column, DateTime, Enum, Float, Integer, LargeBinary, String, Text, Boolean
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -81,10 +81,22 @@ class User(Base):
         default=TrustLevel.novo, server_default="novo",
     )
     avg_rating = Column(Float, nullable=True)
+    totp_secret_encrypted = Column(LargeBinary, nullable=True)
+    totp_backup_codes_encrypted = Column(Text, nullable=True)
+    totp_enabled_at = Column(DateTime(timezone=True), nullable=True)
     rating_count = Column(Integer, nullable=False, default=0, server_default="0")
     phone = Column(String(20), nullable=True)
     selfie_path = Column(String(255), nullable=True)
     doc_photo_path = Column(String(255), nullable=True)
+    reset_token_hash = Column(String(64), nullable=True, index=True)
+    reset_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    # LGPD — registro de consentimento
+    terms_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    privacy_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    terms_version = Column(String(20), nullable=True)
+    consent_ip = Column(String(64), nullable=True)
+    biometric_consent_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

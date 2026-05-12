@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -26,8 +26,11 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(subject: str | int, extra: dict[str, Any] | None = None) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRES_MIN)
+def create_access_token(subject: str | int, extra: dict[str, Any] | None = None, expires_delta: timedelta | None = None) -> str:
+    if expires_delta is not None:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRES_MIN)
     payload: dict[str, Any] = {
         "sub": str(subject),
         "exp": expire,
@@ -42,5 +45,5 @@ def create_access_token(subject: str | int, extra: dict[str, Any] | None = None)
 def decode_token(token: str) -> dict[str, Any] | None:
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:
         return None

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, MapPin, Heart } from 'lucide-react';
+import { Mail, MapPin, Heart, ShieldCheck, Instagram } from 'lucide-react';
 import Logo from './Logo.jsx';
 
 export default function Footer() {
@@ -18,6 +18,21 @@ export default function Footer() {
               pessoas dispostas a iluminar a vida umas das outras. Nada de
               algoritmos frios — só gente cuidando de gente.
             </p>
+            <div className="mt-6">
+              <h4 className="font-display font-semibold text-white text-sm uppercase tracking-wider mb-3">
+                Siga nossa luz
+              </h4>
+              <a
+                href="https://instagram.com/luz_coletiva"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-sun-400 hover:text-ink-900 transition-colors rounded-full px-4 py-2 font-body text-sm"
+                aria-label="Instagram do Luz Coletiva (@luz_coletiva)"
+              >
+                <Instagram size={18} />
+                <span>@luz_coletiva</span>
+              </a>
+            </div>
           </div>
 
           <div>
@@ -26,9 +41,11 @@ export default function Footer() {
             </h4>
             <ul className="mt-4 space-y-2 font-body text-white/80">
               <li><Link to="/como-funciona" className="hover:text-sun-400 transition-colors">Como funciona</Link></li>
-              <li><a href="#" className="hover:text-sun-400 transition-colors">Histórias</a></li>
-              <li><a href="#" className="hover:text-sun-400 transition-colors">Segurança</a></li>
-              <li><a href="#" className="hover:text-sun-400 transition-colors">Perguntas frequentes</a></li>
+              <li><Link to="/sobre" className="hover:text-sun-400 transition-colors">Sobre nós</Link></li>
+              <li><Link to="/faq" className="hover:text-sun-400 transition-colors">Perguntas frequentes</Link>
+              <Link to="/blog" className="hover:text-ink-900">Blog</Link></li>
+              <li><Link to="/privacidade" className="hover:text-sun-400 transition-colors">Política de Privacidade</Link></li>
+              <li><Link to="/termos" className="hover:text-sun-400 transition-colors">Termos de Uso</Link></li>
             </ul>
           </div>
 
@@ -42,8 +59,28 @@ export default function Footer() {
                 <a href="mailto:contato@luzcoletiva.com.br" className="hover:text-sun-400 transition-colors">contato@luzcoletiva.com.br</a>
               </li>
               <li className="flex items-start gap-2">
+                <Instagram size={16} className="mt-1 text-sun-400 shrink-0" />
+                <a
+                  href="https://instagram.com/luz_coletiva"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-sun-400 transition-colors"
+                >
+                  @luz_coletiva
+                </a>
+              </li>
+              <li className="flex items-start gap-2">
                 <MapPin size={16} className="mt-1 text-sun-400 shrink-0" />
                 <span>São Paulo — Brasil</span>
+              </li>
+              <li className="flex items-start gap-2 pt-2 border-t border-white/10 mt-3">
+                <ShieldCheck size={16} className="mt-1 text-sun-400 shrink-0" />
+                <div>
+                  <div className="font-display font-semibold text-white text-sm">Encarregado de Dados (DPO)</div>
+                  <a href="mailto:contato@luzcoletiva.com.br" className="hover:text-sun-400 transition-colors text-sm">
+                    contato@luzcoletiva.com.br
+                  </a>
+                </div>
               </li>
             </ul>
           </div>

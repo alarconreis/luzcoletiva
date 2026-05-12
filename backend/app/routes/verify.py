@@ -42,6 +42,9 @@ MAX_FILE_BYTES = 8 * 1024 * 1024  # 8 MB cada
 
 
 def _client_ip(request: Request) -> str:
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        return cf_ip.strip()
     xff = request.headers.get("x-forwarded-for")
     if xff:
         return xff.split(",")[0].strip()
@@ -91,11 +94,19 @@ def submit(
     rg: UploadFile = File(...),
     selfie: UploadFile = File(...),
     keep_avatar: bool = Form(False),
+    biometric_consent: bool = Form(False),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     if user.is_verified:
         raise HTTPException(400, "Você já está verificado")
+    if not biometric_consent:
+        raise HTTPException(
+            400,
+            "É necessário consentir com o tratamento de dado biométrico (selfie + face match) para prosseguir.",
+        )
+    user.biometric_consent_at = datetime.now(timezone.utc)
+    db.commit()
 
     if _attempts_last_24h(db, user.id) >= settings.VERIFY_MAX_ATTEMPTS_24H:
         raise HTTPException(

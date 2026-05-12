@@ -21,7 +21,7 @@ from app.core.moderation import check_message
 from app.core.uploads import UPLOAD_DIR, save_upload
 from app.models.help import (
     ChatMessage, ChatReport, HelpOffer, HelpOfferStatus,
-    HelpRequest, HelpRequestStatus, HelpCategory,
+    HelpRequest, HelpRequestStatus, HelpCategory, ShippingMethod,
 )
 from app.models.user import User, ProfileType, UserRole, TrustLevel, TRUST_OFFER_LIMITS
 from app.tasks.email_tasks import (
@@ -33,6 +33,7 @@ from app.schemas.help import (
     ChatMessageCreate, ChatMessageOut, ChatReportCreate,
     HelpOfferCreate, HelpOfferOut,
     HelpRequestDetail, HelpRequestPublic,
+    ShippingAddress, ShippingMethodChoice, PickupLocationUpdate, TrackingCodeUpdate,
 )
 
 import redis as _redis
@@ -116,7 +117,7 @@ _ACTIVE_STATUSES = [
 
 _ENDED_STATUSES = [HelpRequestStatus.closed, HelpRequestStatus.cancelled]
 
-COOLDOWN_DAYS = 15
+COOLDOWN_DAYS = 0  # temporariamente desativado
 
 
 def _check_active_limit(user: User, db: Session) -> None:
@@ -158,6 +159,32 @@ def _check_cooldown(user: User, db: Session) -> None:
         )
 
 
+def _populate_is_accepted_helper(req, user, db):
+    """Retorna HelpRequestDetail com is_accepted_helper, has_open_report e dados institucionais populados."""
+    is_accepted = False
+    if req.accepted_offer_id:
+        offer = db.query(HelpOffer).filter(HelpOffer.id == req.accepted_offer_id).first()
+        if offer and offer.helper_id == user.id:
+            is_accepted = True
+    has_open_report = db.query(ChatReport).filter(
+        ChatReport.request_id == req.id,
+        ChatReport.reporter_id == user.id,
+        ChatReport.resolved.is_(False),
+    ).first() is not None
+    detail = HelpRequestDetail.model_validate(req)
+    detail.is_accepted_helper = is_accepted
+    detail.has_open_report = has_open_report
+
+    # Atendimento Assistido: expõe nome do assisted_profile pra UI
+    if req.is_institutional and req.assisted_profile_id:
+        from app.models.assisted import AssistedProfile
+        profile = db.query(AssistedProfile).filter(AssistedProfile.id == req.assisted_profile_id).first()
+        if profile:
+            detail.assisted_profile_name = profile.full_name
+    return detail
+
+
+
 @router.post("/help-requests", response_model=HelpRequestDetail, status_code=201)
 @limiter.limit("10/hour")
 async def create_request(
@@ -168,14 +195,15 @@ async def create_request(
     city: str = Form(..., min_length=2, max_length=80),
     state: str = Form(..., min_length=2, max_length=2),
     value: float = Form(..., ge=50.0, le=300.0, description="Valor solicitado em reais (R$ 50–300)"),
-    document: UploadFile = File(..., description="Comprovante, orçamento ou outro documento que prove a necessidade"),
+    document: Optional[UploadFile] = File(None, description="Comprovante, orçamento ou outro documento (opcional). Pode anexar foto do item desejado, orçamento de loja, ou prova de necessidade."),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     _ensure_requester(user)
+    _ensure_verified(user)
     _check_active_limit(user, db)
     _check_cooldown(user, db)
-    filename = await save_upload(document)
+    filename = await save_upload(document) if document and document.filename else None
     req = HelpRequest(
         requester_id=user.id,
         title=title.strip(),
@@ -190,7 +218,7 @@ async def create_request(
     db.add(req)
     db.commit()
     db.refresh(req)
-    return req
+    return _populate_is_accepted_helper(req, user, db)
 
 
 @router.get("/help-requests/{req_id}/document")
@@ -290,7 +318,7 @@ def get_request(
     ).first() is not None
     if not (is_owner or has_offer or _is_involved(req, user, db)):
         raise HTTPException(403, "Acesso negado")
-    return HelpRequestDetail.model_validate(req)
+    return _populate_is_accepted_helper(req, user, db)
 
 
 @router.post("/help-requests/{req_id}/close", response_model=HelpRequestDetail)
@@ -301,17 +329,41 @@ def close_request(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Solicitante fecha pedido. Permitido em matched (cancelamento) ou delivered (normal).
+    Bloqueia in_transit (precisa passar por confirm-delivery ou esperar auto após 7d).
+    Apaga endereço/ponto ao fechar (LGPD)."""
     req = db.query(HelpRequest).filter(HelpRequest.id == req_id).first()
     if not req:
         raise HTTPException(404, "Pedido não encontrado")
-    if req.status == HelpRequestStatus.pending_review:
-        raise HTTPException(400, "Pedido ainda aguarda aprovação da moderação")
-    if not _is_involved(req, user, db):
-        raise HTTPException(403, "Acesso negado")
-    req.status = HelpRequestStatus.closed
+    if req.requester_id != user.id:
+        raise HTTPException(403, "Apenas o solicitante pode fechar")
+
+    if req.status == HelpRequestStatus.in_transit:
+        raise HTTPException(
+            400,
+            "Pedido em trânsito. Aguarde a chegada para confirmar recebimento, "
+            "ou aguarde 7 dias para fechamento automático."
+        )
+    if req.status in (HelpRequestStatus.closed, HelpRequestStatus.cancelled):
+        raise HTTPException(400, "Pedido já está finalizado")
+
+    # Se vinha de delivered, é fechamento normal; senão, é cancelamento
+    if req.status == HelpRequestStatus.delivered:
+        req.status = HelpRequestStatus.closed
+    else:
+        req.status = HelpRequestStatus.cancelled
+
+    db.commit()
+
+    # LGPD: limpa dados de endereço via SQL bruto (workaround SQLAlchemy + JSONB)
+    from sqlalchemy import text
+    db.execute(
+        text("UPDATE help_requests SET shipping_address_json = NULL, pickup_location = NULL WHERE id = :rid"),
+        {"rid": req.id}
+    )
     db.commit()
     db.refresh(req)
-    return req
+    return _populate_is_accepted_helper(req, user, db)
 
 
 # -------------------- Ofertas --------------------
@@ -578,3 +630,208 @@ def report_chat(
     except Exception:
         pass
     return {"status": "received", "report_id": report.id}
+
+
+
+# ============================================
+# Logística pós-aceite (Fase 2)
+# ============================================
+
+@router.post("/help-requests/{req_id}/shipping-method", response_model=HelpRequestDetail)
+def set_shipping_method(
+    req_id: int,
+    body: ShippingMethodChoice,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Helper aceito escolhe modo de entrega (correios ou pickup_point)."""
+    req = db.query(HelpRequest).filter(HelpRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Pedido não encontrado")
+    if req.status != HelpRequestStatus.matched:
+        raise HTTPException(400, "Pedido precisa estar em 'matched' para definir logística")
+
+    # Só helper aceito pode escolher
+    accepted_offer = db.query(HelpOffer).filter(
+        HelpOffer.id == req.accepted_offer_id,
+    ).first()
+    if not accepted_offer or accepted_offer.helper_id != user.id:
+        raise HTTPException(403, "Apenas o helper aceito pode escolher modo de entrega")
+
+    req.shipping_method = ShippingMethod(body.method)
+    db.commit()
+    db.refresh(req)
+
+    # Notifica ajudado pra preencher endereço/local
+    try:
+        from app.tasks.email_tasks import send_shipping_method_chosen
+        requester = db.query(User).filter(User.id == req.requester_id).first()
+        if requester:
+            send_shipping_method_chosen.delay(
+                requester.email, requester.name, body.method, req.title, req.id
+            )
+    except Exception:
+        pass
+
+    return _populate_is_accepted_helper(req, user, db)
+
+
+@router.post("/help-requests/{req_id}/shipping-address", response_model=HelpRequestDetail)
+def set_shipping_address(
+    req_id: int,
+    body: ShippingAddress,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Ajudado preenche endereço estruturado (modo correios)."""
+    req = db.query(HelpRequest).filter(HelpRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Pedido não encontrado")
+    if req.requester_id != user.id:
+        raise HTTPException(403, "Apenas o solicitante pode preencher endereço")
+    if req.shipping_method != ShippingMethod.correios:
+        raise HTTPException(400, "Endereço só se aplica ao modo Correios")
+    if req.status != HelpRequestStatus.matched:
+        raise HTTPException(400, "Pedido precisa estar em 'matched'")
+
+    req.shipping_address_json = body.model_dump()
+    db.commit()
+    db.refresh(req)
+
+    try:
+        from app.tasks.email_tasks import send_shipping_address_provided
+        offer = db.query(HelpOffer).filter(HelpOffer.id == req.accepted_offer_id).first()
+        if offer:
+            helper = db.query(User).filter(User.id == offer.helper_id).first()
+            if helper:
+                send_shipping_address_provided.delay(
+                    helper.email, helper.name, req.shipping_method.value if req.shipping_method else "correios",
+                    req.title, req.id
+                )
+    except Exception:
+        pass
+
+    return _populate_is_accepted_helper(req, user, db)
+
+
+@router.post("/help-requests/{req_id}/pickup-location", response_model=HelpRequestDetail)
+def set_pickup_location(
+    req_id: int,
+    body: PickupLocationUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Ajudado descreve ponto de retirada (texto livre, modo pickup_point)."""
+    req = db.query(HelpRequest).filter(HelpRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Pedido não encontrado")
+    if req.requester_id != user.id:
+        raise HTTPException(403, "Apenas o solicitante pode descrever o ponto")
+    if req.shipping_method != ShippingMethod.pickup_point:
+        raise HTTPException(400, "Ponto de retirada só se aplica ao modo correspondente")
+    if req.status != HelpRequestStatus.matched:
+        raise HTTPException(400, "Pedido precisa estar em 'matched'")
+
+    req.pickup_location = body.location
+    db.commit()
+    db.refresh(req)
+
+    try:
+        from app.tasks.email_tasks import send_shipping_address_provided
+        offer = db.query(HelpOffer).filter(HelpOffer.id == req.accepted_offer_id).first()
+        if offer:
+            helper = db.query(User).filter(User.id == offer.helper_id).first()
+            if helper:
+                send_shipping_address_provided.delay(
+                    helper.email, helper.name, req.shipping_method.value if req.shipping_method else "correios",
+                    req.title, req.id
+                )
+    except Exception:
+        pass
+
+    return _populate_is_accepted_helper(req, user, db)
+
+
+@router.post("/help-requests/{req_id}/start-shipping", response_model=HelpRequestDetail)
+def start_shipping(
+    req_id: int,
+    body: TrackingCodeUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Helper anexa código de rastreio e marca pedido como in_transit."""
+    from datetime import datetime, timezone
+
+    req = db.query(HelpRequest).filter(HelpRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Pedido não encontrado")
+
+    accepted_offer = db.query(HelpOffer).filter(HelpOffer.id == req.accepted_offer_id).first()
+    if not accepted_offer or accepted_offer.helper_id != user.id:
+        raise HTTPException(403, "Apenas o helper aceito pode marcar como enviado")
+
+    if req.status != HelpRequestStatus.matched:
+        raise HTTPException(400, "Pedido precisa estar em 'matched'")
+    if req.shipping_method is None:
+        raise HTTPException(400, "Defina o modo de entrega antes")
+
+    # Para correios, exige endereço; para pickup, exige ponto
+    if req.shipping_method == ShippingMethod.correios and not req.shipping_address_json:
+        raise HTTPException(400, "Aguardando o solicitante preencher o endereço")
+    if req.shipping_method == ShippingMethod.pickup_point and not req.pickup_location:
+        raise HTTPException(400, "Aguardando o solicitante descrever o ponto de retirada")
+
+    req.tracking_code = body.tracking_code
+    req.shipped_at = datetime.now(timezone.utc)
+    req.status = HelpRequestStatus.in_transit
+    db.commit()
+    db.refresh(req)
+
+    try:
+        from app.tasks.email_tasks import send_package_shipped
+        requester = db.query(User).filter(User.id == req.requester_id).first()
+        if requester:
+            send_package_shipped.delay(
+                requester.email, requester.name, req.tracking_code, req.title, req.id
+            )
+    except Exception:
+        pass
+
+    return _populate_is_accepted_helper(req, user, db)
+
+
+@router.post("/help-requests/{req_id}/confirm-delivery", response_model=HelpRequestDetail)
+def confirm_delivery(
+    req_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Ajudado confirma recebimento — marca delivered (closed segue após /close ou auto)."""
+    from datetime import datetime, timezone
+
+    req = db.query(HelpRequest).filter(HelpRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Pedido não encontrado")
+    if req.requester_id != user.id:
+        raise HTTPException(403, "Apenas o solicitante pode confirmar recebimento")
+    if req.status != HelpRequestStatus.in_transit:
+        raise HTTPException(400, "Pedido precisa estar em 'in_transit'")
+
+    req.delivered_at = datetime.now(timezone.utc)
+    req.status = HelpRequestStatus.delivered
+    db.commit()
+    db.refresh(req)
+
+    try:
+        from app.tasks.email_tasks import send_delivery_confirmed
+        offer = db.query(HelpOffer).filter(HelpOffer.id == req.accepted_offer_id).first()
+        if offer:
+            helper = db.query(User).filter(User.id == offer.helper_id).first()
+            if helper:
+                send_delivery_confirmed.delay(
+                    helper.email, helper.name, req.title, req.id
+                )
+    except Exception:
+        pass
+
+    return _populate_is_accepted_helper(req, user, db)

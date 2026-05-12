@@ -65,14 +65,6 @@ export default function Hero() {
           {/* Métricas suaves de prova social */}
           <div className="mt-14 flex flex-wrap gap-8 text-ink-900">
             <div>
-              <div className="font-display font-bold text-3xl">+1.200</div>
-              <div className="font-body text-sm opacity-75">vidas iluminadas</div>
-            </div>
-            <div>
-              <div className="font-display font-bold text-3xl">87</div>
-              <div className="font-body text-sm opacity-75">cidades conectadas</div>
-            </div>
-            <div>
               <div className="font-display font-bold text-3xl">100%</div>
               <div className="font-body text-sm opacity-75">gratuito e seguro</div>
             </div>

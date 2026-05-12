@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Calendar, CheckCircle2, Clock, Mail, Pencil, Phone, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Calendar, CheckCircle2, Clock, Copy, Download, Heart, Mail, Pencil, Phone, ShieldCheck, Trash2, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../services/api.js';
 
+import { useNoIndex } from '../components/NoIndex.jsx';
 export default function Dashboard() {
-  const { user, updateUser } = useAuth();
+  useNoIndex();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteText, setDeleteText] = useState('');
 
   const showToast = (msg, kind = 'success') => {
     setToast({ msg, kind });
@@ -52,6 +59,49 @@ export default function Dashboard() {
       .catch(() => setHistory({ items: [] }))
       .finally(() => setLoading(false));
   }, []);
+
+  const exportMyData = async () => {
+    setExporting(true);
+    try {
+      const { data } = await api.get('/profile/export');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `luzcoletiva-meus-dados-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      showToast('Dados exportados. Verifique o download.');
+    } catch (e) {
+      showToast(e.response?.data?.detail || 'Erro ao exportar', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const copyPix = async () => {
+    try {
+      await navigator.clipboard.writeText('316.402.348-02');
+      showToast('Chave PIX copiada');
+    } catch {
+      showToast('Não foi possível copiar', 'error');
+    }
+  };
+
+  const deleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await api.delete('/profile');
+      setDeleteConfirm(false);
+      showToast('Conta excluída. Você será desconectado.');
+      setTimeout(() => { logout(); navigate('/'); }, 1500);
+    } catch (e) {
+      showToast(e.response?.data?.detail || 'Erro ao excluir conta', 'error');
+      setDeleting(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -109,6 +159,37 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Apoie a plataforma */}
+      <div className="rounded-2xl bg-gradient-to-r from-sun-100 to-sun-50 border border-sun-200 p-5 mb-10 flex items-start gap-4 flex-wrap">
+        <div className="w-12 h-12 rounded-xl bg-sun-400 flex items-center justify-center text-ink-900 shrink-0">
+          <Heart size={22} />
+        </div>
+        <div className="flex-1 min-w-[240px]">
+          <h2 className="font-display font-semibold text-lg text-ink-900">
+            Ajude a manter a Luz Coletiva acesa
+          </h2>
+          <p className="font-body text-sm text-ink-700 mt-1">
+            A plataforma é mantida com recursos próprios e doações voluntárias. Se puder
+            contribuir, qualquer valor ajuda a continuar conectando quem precisa com quem
+            pode ajudar.
+          </p>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <code className="px-3 py-1.5 rounded-lg bg-white border border-ink-200 font-mono text-sm text-ink-900 select-all">
+              316.402.348-02
+            </code>
+            <button
+              onClick={copyPix}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:text-sky-800 px-2 py-1.5"
+            >
+              <Copy size={14} /> Copiar chave PIX
+            </button>
+          </div>
+          <p className="font-body text-xs text-ink-500 mt-2">
+            Recebedor: Vinicius Alarcon Reis · Chave PIX (CPF)
+          </p>
         </div>
       </div>
 
@@ -229,6 +310,77 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* LGPD — meus dados */}
+      <div className="card p-6 mt-10">
+        <h2 className="font-display font-semibold text-xl text-ink-900 mb-1 flex items-center gap-2">
+          <ShieldCheck size={20} className="text-sky-600" /> Meus dados (LGPD)
+        </h2>
+        <p className="font-body text-sm text-ink-700 mb-5">
+          Você pode exportar uma cópia completa dos seus dados ou solicitar a exclusão da
+          conta a qualquer momento. Veja a{' '}
+          <Link to="/privacidade" className="text-sky-600 hover:text-sky-800 underline">
+            Política de Privacidade
+          </Link>.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={exportMyData}
+            disabled={exporting}
+            className="btn-secondary text-sm py-2 disabled:opacity-50"
+          >
+            <Download size={16} /> {exporting ? 'Exportando…' : 'Exportar meus dados'}
+          </button>
+          <button
+            onClick={() => { setDeleteConfirm(true); setDeleteText(''); }}
+            className="btn-ghost text-sm py-2 text-red-600 border border-red-200 hover:bg-red-50"
+          >
+            <Trash2 size={16} /> Excluir minha conta
+          </button>
+        </div>
+      </div>
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-ink-900/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-card max-w-md w-full p-6">
+            <h3 className="font-display font-semibold text-lg text-ink-900 mb-3">
+              Excluir minha conta
+            </h3>
+            <p className="font-body text-sm text-ink-700 mb-3">
+              Esta ação <strong>é irreversível</strong>. Seus dados pessoais serão
+              anonimizados imediatamente e você não poderá mais entrar com este e-mail.
+              Mensagens em chats já existentes permanecerão visíveis para os outros
+              participantes, mas com sua identidade substituída por "Usuário removido".
+            </p>
+            <p className="font-body text-sm text-ink-700 mb-3">
+              Para confirmar, digite <strong>EXCLUIR</strong> abaixo:
+            </p>
+            <input
+              type="text"
+              value={deleteText}
+              onChange={(e) => setDeleteText(e.target.value)}
+              className="input-field w-full mb-4"
+              placeholder="EXCLUIR"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="btn-ghost"
+                disabled={deleting}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={deleteAccount}
+                disabled={deleting || deleteText !== 'EXCLUIR'}
+                className="btn-primary bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Excluindo…' : 'Excluir definitivamente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editing && (
         <div className="fixed inset-0 bg-ink-900/50 flex items-center justify-center z-50 px-4">

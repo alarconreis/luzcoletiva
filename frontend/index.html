@@ -2,23 +2,89 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Luz Coletiva — Iluminando vidas juntos. Plataforma de solidariedade que conecta quem precisa de ajuda com quem pode ajudar." />
     <meta name="theme-color" content="#FFD54F" />
 
-    <!-- Fontes da identidade Luz Coletiva -->
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- SEO básico -->
+    <title>Luz Coletiva — Plataforma de solidariedade entre pessoas</title>
+    <meta name="description" content="Luz Coletiva conecta quem precisa de ajuda com quem pode ajudar. Plataforma brasileira de solidariedade direta entre pessoas, com identidade verificada e mediação humana." />
+    <meta name="keywords" content="ajuda mútua, solidariedade, doação, ajuda direta, plataforma de ajuda, brasil, voluntariado, apoio social" />
+    <meta name="author" content="Luz Coletiva" />
+    <link rel="canonical" href="https://luzcoletiva.com.br/" />
+
+    <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Luz Coletiva" />
+    <meta property="og:title" content="Luz Coletiva — Plataforma de solidariedade entre pessoas" />
+    <meta property="og:description" content="Conectamos quem precisa de ajuda com quem pode ajudar. Identidade verificada, mediação humana, sem intermediação de dinheiro." />
+    <meta property="og:url" content="https://luzcoletiva.com.br/" />
+    <meta property="og:image" content="https://luzcoletiva.com.br/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Luz Coletiva — Iluminando vidas juntos" />
+    <meta property="og:locale" content="pt_BR" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Luz Coletiva — Plataforma de solidariedade" />
+    <meta name="twitter:description" content="Conectamos quem precisa de ajuda com quem pode ajudar. Identidade verificada, mediação humana." />
+    <meta name="twitter:image" content="https://luzcoletiva.com.br/og-image.png" />
+
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Luz Coletiva",
+      "alternateName": "Luz Coletiva — Iluminando vidas juntos",
+      "url": "https://luzcoletiva.com.br/",
+      "logo": "https://luzcoletiva.com.br/favicon.svg",
+      "image": "https://luzcoletiva.com.br/og-image.svg",
+      "description": "Plataforma brasileira de solidariedade direta entre pessoas, com identidade verificada e mediação humana.",
+      "email": "contato@luzcoletiva.com.br",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Brasil"
+      },
+      "sameAs": []
+    }
+    </script>
+
+    <!-- Structured Data: WebSite (com SearchAction) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Luz Coletiva",
+      "url": "https://luzcoletiva.com.br/",
+      "inLanguage": "pt-BR"
+    }
+    </script>
+
+    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-
-    <title>Luz Coletiva — Iluminando vidas juntos</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Fallback noscript pra bots e users sem JS -->
+    <noscript>
+      <div style="max-width: 720px; margin: 4rem auto; padding: 2rem; font-family: system-ui, sans-serif;">
+        <h1>Luz Coletiva</h1>
+        <p>Plataforma de solidariedade entre pessoas. Conectamos quem precisa de ajuda com quem pode ajudar.</p>
+        <p>Esta aplicação requer JavaScript habilitado.</p>
+        <p><a href="/como-funciona">Como funciona</a> | <a href="/sobre">Sobre nós</a> | <a href="/faq">Perguntas frequentes</a></p>
+      </div>
+    </noscript>
   </body>
 </html>

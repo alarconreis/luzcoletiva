@@ -18,8 +18,8 @@ COPY . .
 
 # Usuário não-root (segurança)
 RUN useradd -m -u 1000 appuser \
-    && mkdir -p /app/uploads \
-    && chown -R appuser:appuser /app
+    && mkdir -p /app/uploads /data/verifications \
+    && chown -R appuser:appuser /app /data
 USER appuser
 
 EXPOSE 8000

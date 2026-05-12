@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Send, AlertTriangle, CheckCircle2, X, Flag, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Send, AlertTriangle, CheckCircle2, X, Flag, Star, Sparkles} from 'lucide-react';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CATEGORY_LABEL, STATUS_COLOR, STATUS_LABEL, TRUST_BADGE, TRUST_LABEL, memberSince } from '../constants.js';
+import ShippingMethodPicker from '../components/shipping/ShippingMethodPicker.jsx';
+import ShippingAddressForm from '../components/shipping/ShippingAddressForm.jsx';
+import PickupLocationForm from '../components/shipping/PickupLocationForm.jsx';
+import ShippingAddressDisplay from '../components/shipping/ShippingAddressDisplay.jsx';
+import TrackingForm from '../components/shipping/TrackingForm.jsx';
+import TrackingDisplay from '../components/shipping/TrackingDisplay.jsx';
 
+
+import { useNoIndex } from '../components/NoIndex.jsx';
 export default function HelpRequestDetail() {
+  useNoIndex();
   const { id } = useParams();
   const { user } = useAuth();
   const [req, setReq] = useState(null);
@@ -25,6 +34,8 @@ export default function HelpRequestDetail() {
   const chatBottomRef = useRef(null);
 
   const isOwner = req && req.requester?.id === user.id;
+  const isRequester = isOwner;
+  const isAcceptedHelper = !!req?.is_accepted_helper;
   const canChat = req && req.status === 'matched';
 
   const showToast = (msg, kind = 'success') => {
@@ -158,6 +169,7 @@ export default function HelpRequestDetail() {
       showToast('Denúncia enviada à moderação. Obrigado.');
       setShowReport(false);
       setReportReason('');
+      loadAll();
     } catch (e) {
       showToast(e.response?.data?.detail || 'Erro ao denunciar', 'error');
     }
@@ -214,18 +226,37 @@ export default function HelpRequestDetail() {
             </>
           )}
         </div>
+        {req.is_institutional && (
+          <div className="card p-4 mb-4 bg-sun-50 border-sun-300 border-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={20} className="text-sun-700" />
+              <span className="font-display font-bold text-sun-800">Verificado pela Luz Coletiva</span>
+            </div>
+            <p className="text-sm text-ink-700 leading-relaxed">
+              Este pedido foi cadastrado pela equipe Luz Coletiva em nome de <strong>{req.assisted_profile_name || 'uma pessoa assistida'}</strong>, 
+              que não tem acesso digital direto. Verificamos a história presencialmente. 
+              A coordenação da entrega será feita pela equipe da plataforma.
+            </p>
+          </div>
+        )}
         <p className="font-body text-ink-900 leading-relaxed whitespace-pre-wrap">{req.description}</p>
 
-        {(req.status === 'matched' || req.status === 'closed') && (
+        {(req.status === 'matched' || req.status === 'in_transit' || req.status === 'delivered' || req.status === 'closed') && (
           <div className="mt-5 pt-5 border-t border-ink-100 flex flex-wrap gap-2">
-            {req.status === 'matched' && (
+            {(req.status === 'matched' || req.status === 'delivered') && isOwner && (
               <button onClick={closeRequest} className="btn-secondary text-sm py-2">
-                <CheckCircle2 size={16} /> Marcar como concluído
+                <CheckCircle2 size={16} /> {req.status === 'delivered' ? 'Fechar pedido' : 'Cancelar pedido'}
               </button>
             )}
-            <button onClick={() => setShowReport(true)} className="btn-ghost text-sm py-2 text-red-600">
-              <Flag size={16} /> Denunciar conversa
-            </button>
+            {req.has_open_report ? (
+              <span className="inline-flex items-center gap-2 text-sm text-red-600 px-3 py-2 bg-red-50 rounded-lg border border-red-200">
+                <Flag size={16} /> Conversa denunciada — em análise pela moderação
+              </span>
+            ) : (
+              <button onClick={() => setShowReport(true)} className="btn-ghost text-sm py-2 text-red-600">
+                <Flag size={16} /> Denunciar conversa
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -305,6 +336,97 @@ export default function HelpRequestDetail() {
           </div>
         </div>
       )}
+        {/* === Wizard de logística pós-aceite === */}
+        {(req.status === 'matched' || req.status === 'in_transit' || req.status === 'delivered') && req.accepted_offer_id && (
+          <div className="space-y-4 mb-6">
+            {/* Helper escolhe método */}
+            {req.status === 'matched' && !req.shipping_method && !isRequester && isAcceptedHelper && (
+              <ShippingMethodPicker requestId={req.id} onUpdated={(d) => setReq(d)} />
+            )}
+            {req.status === 'matched' && !req.shipping_method && isRequester && (
+              <div className="card p-4 bg-ink-50">
+                <p className="text-sm text-ink-700">
+                  Aguardando o helper escolher o modo de entrega…
+                </p>
+              </div>
+            )}
+
+            {/* Ajudado preenche endereço (modo correios) */}
+            {req.status === 'matched' && req.shipping_method === 'correios' && !req.shipping_address_json && isRequester && (
+              <ShippingAddressForm
+                requestId={req.id}
+                defaultName={user?.name}
+                onUpdated={(d) => setReq(d)}
+              />
+            )}
+            {req.status === 'matched' && req.shipping_method === 'correios' && !req.shipping_address_json && !isRequester && (
+              <div className="card p-4 bg-ink-50">
+                <p className="text-sm text-ink-700">
+                  Aguardando o solicitante preencher o endereço…
+                </p>
+              </div>
+            )}
+
+            {/* Ajudado preenche ponto de retirada */}
+            {req.status === 'matched' && req.shipping_method === 'pickup_point' && !req.pickup_location && isRequester && (
+              <PickupLocationForm
+                requestId={req.id}
+                onUpdated={(d) => setReq(d)}
+              />
+            )}
+            {req.status === 'matched' && req.shipping_method === 'pickup_point' && !req.pickup_location && !isRequester && (
+              <div className="card p-4 bg-ink-50">
+                <p className="text-sm text-ink-700">
+                  Aguardando o solicitante descrever o ponto de retirada…
+                </p>
+              </div>
+            )}
+
+            {/* Helper anexa tracking */}
+            {req.status === 'matched' && req.shipping_method && (req.shipping_address_json || req.pickup_location) && !isRequester && isAcceptedHelper && (
+              <>
+                <ShippingAddressDisplay
+                  method={req.shipping_method}
+                  address={req.shipping_address_json}
+                  pickupLocation={req.pickup_location}
+                />
+                <TrackingForm requestId={req.id} onUpdated={(d) => setReq(d)} />
+              </>
+            )}
+            {req.status === 'matched' && req.shipping_method && (req.shipping_address_json || req.pickup_location) && isRequester && (
+              <div className="card p-4 bg-ink-50">
+                <p className="text-sm text-ink-700">
+                  Endereço informado. Aguardando o helper postar e adicionar o código de rastreio…
+                </p>
+              </div>
+            )}
+
+            {/* In transit: ambos veem tracking */}
+            {req.status === 'in_transit' && req.tracking_code && (
+              <TrackingDisplay
+                requestId={req.id}
+                trackingCode={req.tracking_code}
+                isRequester={isRequester}
+                onUpdated={(d) => setReq(d)}
+              />
+            )}
+
+            {/* Delivered: badge final */}
+            {req.status === 'delivered' && (
+              <div className="card p-5 bg-leaf-50 border-leaf-200">
+                <div className="font-display font-semibold text-leaf-700 flex items-center gap-2">
+                  ✓ Entregue
+                </div>
+                <p className="text-sm text-ink-700 mt-1">
+                  {isRequester
+                    ? 'Você confirmou o recebimento. Você pode fechar o pedido a qualquer momento.'
+                    : 'O solicitante confirmou o recebimento. Obrigado por iluminar uma vida!'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
 
       {/* Chat */}
       {(canChat || req.status === 'closed') && (

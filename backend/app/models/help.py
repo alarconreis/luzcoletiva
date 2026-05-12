@@ -15,6 +15,7 @@ import enum
 from sqlalchemy import (
     Column, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, Boolean
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -22,20 +23,28 @@ from app.core.database import Base
 
 
 class HelpCategory(str, enum.Enum):
-    alimentacao = "alimentacao"
-    educacao = "educacao"
-    saude = "saude"
-    instrumentos_musicais = "instrumentos_musicais"
     livros = "livros"
+    material_escolar = "material_escolar"
+    instrumentos_musicais = "instrumentos_musicais"
+    roupas_calcados = "roupas_calcados"
+    itens_bebe = "itens_bebe"
+
 
 
 class HelpRequestStatus(str, enum.Enum):
     pending_review = "pending_review"  # aguardando aprovação do moderador
-    open = "open"            # aguardando ofertas
-    proposed = "proposed"    # ao menos uma oferta pendente
-    matched = "matched"      # solicitante aceitou um helper
-    closed = "closed"        # concluído
-    cancelled = "cancelled"  # cancelado pelo solicitante
+    open = "open"              # aguardando ofertas
+    proposed = "proposed"      # ao menos uma oferta pendente
+    matched = "matched"        # solicitante aceitou um helper
+    in_transit = "in_transit"  # helper enviou, ajudado aguardando
+    delivered = "delivered"    # ajudado confirmou recebimento
+    closed = "closed"          # concluído (ou auto após 7d em delivered)
+    cancelled = "cancelled"    # cancelado pelo solicitante
+
+
+class ShippingMethod(str, enum.Enum):
+    correios = "correios"
+    pickup_point = "pickup_point"
 
 
 class HelpOfferStatus(str, enum.Enum):
@@ -60,6 +69,21 @@ class HelpRequest(Base):
     value = Column(Numeric(8, 2), nullable=True)  # valor solicitado em BRL (R$ 50–300)
     document_path = Column(String(255), nullable=True)  # prova de necessidade obrigatória no cadastro
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Logística pós-aceite (Fase 2)
+    shipping_method = Column(Enum(ShippingMethod), nullable=True)
+    shipping_address_json = Column(JSONB, nullable=True)  # apagado quando vira closed (LGPD)
+    pickup_location = Column(Text, nullable=True)         # apagado quando vira closed (LGPD)
+    tracking_code = Column(String(20), nullable=True)     # formato XX123456789BR
+    shipped_at = Column(DateTime(timezone=True), nullable=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Atendimento Assistido (Fase Institucional)
+    is_institutional = Column(Boolean, nullable=False, default=False)
+    assisted_profile_id = Column(Integer, ForeignKey("assisted_profiles.id"), nullable=True)
+    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    assisted_profile = relationship("AssistedProfile", back_populates="requests", foreign_keys=[assisted_profile_id])
+    created_by_admin = relationship("User", foreign_keys=[created_by_admin_id])
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     requester = relationship("User", foreign_keys=[requester_id])

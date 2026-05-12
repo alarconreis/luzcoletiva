@@ -3,7 +3,6 @@ from app.schemas.user import (  # noqa: F401
     AdminUserOut,
     AuditLogOut,
     RoleUpdate,
-    StoryOut,
     TokenResponse,
     UserLogin,
     UserOut,

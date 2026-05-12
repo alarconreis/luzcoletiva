@@ -70,8 +70,15 @@ class Settings(BaseSettings):
     EMAIL_FROM: str = os.getenv("EMAIL_FROM", "Luz Coletiva <no-reply@luzcoletiva.com.br>")
     EMAIL_REPLY_TO: str = os.getenv("EMAIL_REPLY_TO", "")
     ADMIN_NOTIFY_EMAIL: str = os.getenv("ADMIN_NOTIFY_EMAIL", "")
+    SCAN_TOKEN: str = os.getenv("SCAN_TOKEN", "")
+    SCAN_ALLOWED_IPS: str = os.getenv("SCAN_ALLOWED_IPS", "")
+    SCAN_USER_ID: int = int(os.getenv("SCAN_USER_ID", "0"))
     APP_BASE_URL: str = os.getenv("APP_BASE_URL", "https://luzcoletiva.com.br")
     EMAIL_CHAT_DEBOUNCE_MIN: int = int(os.getenv("EMAIL_CHAT_DEBOUNCE_MIN", "30"))
+
+    # LGPD — versão atual dos termos/política exibida ao usuário
+    TERMS_VERSION: str = os.getenv("TERMS_VERSION", "2026-05-06")
+    DPO_EMAIL: str = os.getenv("DPO_EMAIL", "contato@luzcoletiva.com.br")
 
     class Config:
         env_file = ".env"

@@ -5,7 +5,9 @@ import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import CameraCapture from '../components/CameraCapture.jsx';
 
+import { useNoIndex } from '../components/NoIndex.jsx';
 export default function VerifyIdentity() {
+  useNoIndex();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState(null);
@@ -15,6 +17,7 @@ export default function VerifyIdentity() {
   const [selfieBlob, setSelfieBlob] = useState(null);
   const [selfiePreview, setSelfiePreview] = useState(null);
   const [keepAvatar, setKeepAvatar] = useState(false);
+  const [biometricConsent, setBiometricConsent] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
@@ -36,12 +39,17 @@ export default function VerifyIdentity() {
 
   const submit = async () => {
     if (!rgBlob || !selfieBlob) return;
+    if (!biometricConsent) {
+      setError('É necessário consentir com o tratamento de dado biométrico para prosseguir.');
+      return;
+    }
     setStep('sending');
     setError('');
     const fd = new FormData();
     fd.append('rg', rgBlob, 'rg.jpg');
     fd.append('selfie', selfieBlob, 'selfie.jpg');
     fd.append('keep_avatar', keepAvatar ? 'true' : 'false');
+    fd.append('biometric_consent', 'true');
     try {
       const { data } = await api.post('/verify/submit', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -291,9 +299,32 @@ export default function VerifyIdentity() {
             <p className="font-display font-semibold mb-1 text-sun-700">Antes de enviar</p>
             <p>Confira que ambas as imagens estão legíveis. Você tem até 3 tentativas em 24h.</p>
           </div>
+          {/* LGPD — consentimento específico para dado biométrico (Art. 11, I) */}
+          <label className="flex items-start gap-2 text-sm font-body text-ink-700 bg-sky-50 border border-sky-200 rounded-xl p-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={biometricConsent}
+              onChange={(e) => setBiometricConsent(e.target.checked)}
+              className="mt-1 rounded border-ink-300"
+            />
+            <span>
+              <strong>Consentimento biométrico:</strong> autorizo o tratamento da minha selfie
+              e da análise facial (prova de vida e correspondência com o documento) para fins
+              de verificação de identidade, conforme nossa{' '}
+              <Link to="/privacidade" target="_blank" className="text-sky-600 hover:text-sky-800 underline">
+                Política de Privacidade
+              </Link>. As imagens serão apagadas em até 30 dias após a verificação.
+            </span>
+          </label>
           <div className="flex gap-2">
             <button onClick={() => setStep('selfie')} className="btn-ghost">Voltar</button>
-            <button onClick={submit} className="btn-primary flex-1">Enviar para verificação</button>
+            <button
+              onClick={submit}
+              disabled={!biometricConsent}
+              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Enviar para verificação
+            </button>
           </div>
         </div>
       )}

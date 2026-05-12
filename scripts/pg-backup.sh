@@ -1,9 +1,10 @@
 #!/bin/bash
 # Backup do Postgres do Luz Coletiva
 # Rotação GFS: diário (7d), semanal (4 semanas), mensal (6 meses)
+# Alerta via Resend API se falhar
 set -euo pipefail
 
-# Carrega .env
+# Carrega .env (agora com aspas em EMAIL_FROM)
 set -a
 source /opt/luzcoletiva/.env
 set +a
@@ -11,14 +12,14 @@ set +a
 LOG=/var/log/luz-backup.log
 LOCAL_DIR=/opt/luzcoletiva/backups/postgres
 TS=$(date +%Y%m%d-%H%M%S)
-DOW=$(date +%u)        # 1-7 (segunda=1)
-DOM=$(date +%d)        # 01-31
+DOW=$(date +%u)
+DOM=$(date +%d)
 
-# Tipo do backup do dia (decisão de retenção)
+# Tipo do backup (decisão de retenção)
 TYPE="daily"
 if [ "$DOM" = "01" ]; then
   TYPE="monthly"
-elif [ "$DOW" = "7" ]; then  # domingo
+elif [ "$DOW" = "7" ]; then
   TYPE="weekly"
 fi
 
@@ -32,57 +33,60 @@ send_backup_alert() {
   local exit_code="$1"
   local fail_line="$2"
 
-  if [ -z "${SMTP_HOST:-}" ]; then
-    log "SMTP não configurado — alerta de falha não enviado por e-mail"
+  if [ -z "${RESEND_API_KEY:-}" ]; then
+    log "RESEND_API_KEY não configurado — alerta não enviado"
     return 0
   fi
 
-  ALERT_SUBJECT="[Luz Coletiva] Falha no backup PostgreSQL — $(date '+%Y-%m-%d')" \
-  ALERT_BODY="Falha no backup PostgreSQL do Luz Coletiva.
+  ALERT_SUBJECT="[Luz Coletiva] Falha no backup PostgreSQL" \
+  ALERT_BODY="Falha no backup do Luz Coletiva.
 
 Host: $(hostname)
 Data/hora: $(date)
-Tipo de backup: ${TYPE:-desconhecido}
+Tipo: ${TYPE:-?}
 Código de saída: ${exit_code}
 Linha do erro: ${fail_line}
 
-Verifique o log em: ${LOG}" \
+Log: ${LOG}" \
   ALERT_TO="${ALERT_EMAIL:-contato@luzcoletiva.com.br}" \
-  ALERT_FROM="${SMTP_FROM:-no-reply@luzcoletiva.com.br}" \
-  ALERT_HOST="${SMTP_HOST}" \
-  ALERT_PORT="${SMTP_PORT:-587}" \
-  ALERT_USER="${SMTP_USER:-}" \
-  ALERT_PASS="${SMTP_PASSWORD:-}" \
-  python3 - <<'PYEOF'
-import smtplib, os
-from email.message import EmailMessage
-
-msg = EmailMessage()
-msg["Subject"] = os.environ["ALERT_SUBJECT"]
-msg["From"]    = os.environ["ALERT_FROM"]
-msg["To"]      = os.environ["ALERT_TO"]
-msg.set_content(os.environ["ALERT_BODY"])
-
+  ALERT_FROM="${EMAIL_FROM}" \
+  RESEND_KEY="${RESEND_API_KEY}" \
+  python3 <<'PYRESEND'
+import json, os, urllib.request, urllib.error
+payload = {
+    "from": os.environ["ALERT_FROM"],
+    "to": [os.environ["ALERT_TO"]],
+    "subject": os.environ["ALERT_SUBJECT"],
+    "text": os.environ["ALERT_BODY"],
+}
+req = urllib.request.Request(
+    "https://api.resend.com/emails",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Authorization": "Bearer " + os.environ["RESEND_KEY"],
+        "Content-Type": "application/json",
+        "User-Agent": "LuzColetiva-Backup/1.0",
+    },
+    method="POST",
+)
 try:
-    with smtplib.SMTP(os.environ["ALERT_HOST"], int(os.environ["ALERT_PORT"]), timeout=10) as s:
-        user = os.environ.get("ALERT_USER", "")
-        pwd  = os.environ.get("ALERT_PASS", "")
-        if user and pwd:
-            s.starttls()
-            s.login(user, pwd)
-        s.send_message(msg)
-    print(f"Alerta enviado para {os.environ['ALERT_TO']}")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        print("Alerta enviado: HTTP", resp.status)
+except urllib.error.HTTPError as e:
+    body = e.read().decode("utf-8", errors="replace")[:300]
+    print("Resend HTTP", e.code, body)
 except Exception as e:
-    print(f"Falha ao enviar alerta de backup: {e}")
-PYEOF
+    print("Falha alerta:", e)
+PYRESEND
 }
 
-# Dispara alerta por e-mail se o script abortar com erro
-trap 'rc=$?; log "ERRO: backup falhou (código ${rc}, linha ${BASH_LINENO[0]})"; send_backup_alert "${rc}" "${BASH_LINENO[0]}" 2>&1 | tee -a "$LOG" || true' ERR
+trap 'rc=$?; log "ERRO: backup falhou (cod=${rc}, linha ${BASH_LINENO[0]})"; send_backup_alert "${rc}" "${BASH_LINENO[0]}" 2>&1 | tee -a "$LOG" || true' ERR
+
+mkdir -p "${LOCAL_DIR}"
 
 log "=== Iniciando backup (${TYPE}) ==="
 
-# 1. pg_dump (rodando dentro do container db) | gzip | gpg → arquivo local
+# 1. Dump cifrado
 log "Gerando dump cifrado..."
 docker exec luz-db pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" --clean --if-exists \
   | gzip -9 \
@@ -91,28 +95,25 @@ docker exec luz-db pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" --clean --i
         --output "${DUMP_FILE}"
 
 SIZE=$(du -h "${DUMP_FILE}" | cut -f1)
-log "Dump local criado: ${DUMP_FILE} (${SIZE})"
+log "Dump local: ${DUMP_FILE} (${SIZE})"
 
-# 2. Upload pro B2
-log "Fazendo upload pro B2..."
+# 2. Upload pra B2
+log "Upload pra B2..."
 AWS_ACCESS_KEY_ID="${B2_KEY_ID}" \
 AWS_SECRET_ACCESS_KEY="${B2_APP_KEY}" \
+AWS_DEFAULT_REGION="us-east-005" \
 aws s3 cp "${DUMP_FILE}" "s3://${B2_BUCKET}/postgres/${TYPE}/$(basename ${DUMP_FILE})" \
-  --endpoint-url "${B2_ENDPOINT}" \
-  >> "$LOG" 2>&1
+  --endpoint-url "${B2_ENDPOINT}" >> "$LOG" 2>&1
 
-log "Upload concluído"
+log "Upload OK"
 
-# 3. Rotação local
-log "Aplicando rotação local..."
-# Diários: manter 7
-find "${LOCAL_DIR}" -name "luzcoletiva-daily-*.sql.gz.gpg" -mtime +7 -delete -print | tee -a "$LOG"
-# Semanais: manter 4 semanas (28 dias)
-find "${LOCAL_DIR}" -name "luzcoletiva-weekly-*.sql.gz.gpg" -mtime +28 -delete -print | tee -a "$LOG"
-# Mensais: manter 6 meses (~180 dias)
-find "${LOCAL_DIR}" -name "luzcoletiva-monthly-*.sql.gz.gpg" -mtime +180 -delete -print | tee -a "$LOG"
+# 3. Rotação local (mantém últimos 7 daily, 4 weekly, 6 monthly)
+log "Rotação local..."
+find "${LOCAL_DIR}" -name "luzcoletiva-daily-*.sql.gz.gpg" -mtime +7 -delete 2>>"$LOG" || true
+find "${LOCAL_DIR}" -name "luzcoletiva-weekly-*.sql.gz.gpg" -mtime +28 -delete 2>>"$LOG" || true
+find "${LOCAL_DIR}" -name "luzcoletiva-monthly-*.sql.gz.gpg" -mtime +180 -delete 2>>"$LOG" || true
 
-# 4. Rotação remota (B2) — usa --query do aws cli
+# 4. Rotação remota B2
 prune_remote() {
   local prefix="$1"
   local keep_days="$2"
@@ -121,6 +122,7 @@ prune_remote() {
 
   AWS_ACCESS_KEY_ID="${B2_KEY_ID}" \
   AWS_SECRET_ACCESS_KEY="${B2_APP_KEY}" \
+  AWS_DEFAULT_REGION="us-east-005" \
   aws s3api list-objects-v2 \
     --bucket "${B2_BUCKET}" \
     --prefix "postgres/${prefix}/" \
@@ -129,18 +131,19 @@ prune_remote() {
     --endpoint-url "${B2_ENDPOINT}" 2>>"$LOG" | tr '\t' '\n' | while read -r key; do
       [ -z "$key" ] && continue
       [ "$key" = "None" ] && continue
-      log "Removendo do B2 (antigo): ${key}"
+      log "Remove (B2): ${key}"
       AWS_ACCESS_KEY_ID="${B2_KEY_ID}" \
       AWS_SECRET_ACCESS_KEY="${B2_APP_KEY}" \
+      AWS_DEFAULT_REGION="us-east-005" \
       aws s3 rm "s3://${B2_BUCKET}/${key}" \
         --endpoint-url "${B2_ENDPOINT}" >> "$LOG" 2>&1 || true
     done
 }
 
-log "Aplicando rotação remota (B2)..."
+log "Rotação remota B2..."
 prune_remote "daily" 7
 prune_remote "weekly" 28
 prune_remote "monthly" 180
 
-log "=== Backup concluído com sucesso ==="
+log "=== Backup concluído ==="
 echo "" >> "$LOG"

@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Search, Shield, AlertTriangle, CheckCircle2, Users, Clock, X, FileText, ClipboardList, ShieldCheck, ShieldOff, Flag, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { Search, Shield, AlertTriangle, CheckCircle2, Users, Clock, X, FileText, ClipboardList, ShieldCheck, ShieldOff, Flag, Eye, EyeOff, MessageSquare, Sparkles} from 'lucide-react';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { TRUST_LABEL, TRUST_BADGE, TRUST_LEVELS, CATEGORY_LABEL } from '../constants.js';
 
+import { useNoIndex } from '../components/NoIndex.jsx';
+import AssistedTab from '../components/admin/AssistedTab.jsx';
+import AllRequestsTab from '../components/admin/AllRequestsTab.jsx';
+import BlogTab from '../components/admin/BlogTab.jsx';
+import SecurityTab from '../components/admin/SecurityTab.jsx';
 export default function Admin() {
+  useNoIndex();
   const { user } = useAuth();
   const [tab, setTab] = useState('pending');
   const [stats, setStats] = useState(null);
   const [pending, setPending] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [openReports, setOpenReports] = useState([]);
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -36,6 +43,11 @@ export default function Admin() {
 
   const loadPendingRequests = () =>
     api.get('/admin/help-requests/pending').then(({ data }) => setPendingRequests(data)).catch(() => setPendingRequests([]));
+
+  const loadOpenReports = () =>
+    api.get('/admin/reports', { params: { only_open: true } })
+      .then(({ data }) => setOpenReports(data))
+      .catch(() => setOpenReports([]));
 
   const loadUsers = () => {
     setLoading(true);
@@ -65,7 +77,7 @@ export default function Admin() {
       .finally(() => setAuditLoading(false));
   };
 
-  useEffect(() => { loadStats(); loadPending(); loadPendingRequests(); loadUsers(); }, []);
+  useEffect(() => { loadStats(); loadPending(); loadPendingRequests(); loadOpenReports(); loadUsers(); }, []);
 
   const showToast = (msg, kind = 'success') => {
     setToast({ msg, kind });
@@ -265,9 +277,30 @@ export default function Admin() {
         <TabBtn active={tab === 'requests'} onClick={() => { setTab('requests'); loadPendingRequests(); }} badge={pendingRequests.length}>
           <FileText size={16} /> Pedidos pendentes
         </TabBtn>
+        <TabBtn active={tab === 'reports'} onClick={() => { setTab('reports'); loadOpenReports(); }} badge={openReports.length}>
+          <Flag size={16} /> Chats reportados
+        </TabBtn>
         <TabBtn active={tab === 'users'} onClick={() => { setTab('users'); loadUsers(); }}>
           <Users size={16} /> Todos os usuários
         </TabBtn>
+        {isAdmin && (
+          <TabBtn active={tab === 'assisted'} onClick={() => setTab('assisted')}>
+            <Sparkles size={16} /> Atendimento Assistido
+          </TabBtn>
+        )}
+        <TabBtn active={tab === 'all'} onClick={() => setTab('all')}>
+          <FileText size={16} /> Todos os pedidos
+        </TabBtn>
+        {isAdmin && (
+          <TabBtn active={tab === 'blog'} onClick={() => setTab('blog')}>
+            <FileText size={16} /> Blog
+          </TabBtn>
+        )}
+        {isAdmin && (
+          <TabBtn active={tab === 'security'} onClick={() => setTab('security')}>
+            <Shield size={16} /> Segurança
+          </TabBtn>
+        )}
         {isAdmin && (
           <TabBtn active={tab === 'audit'} onClick={() => { setTab('audit'); setAuditSubtab('actions'); loadAuditLog(); }}>
             <ClipboardList size={16} /> Auditoria
@@ -596,6 +629,11 @@ export default function Admin() {
         </>
       )}
 
+      {/* Painel de chats reportados */}
+      {tab === 'reports' && (
+        <ReportsPanel showToast={showToast} onChange={loadOpenReports} />
+      )}
+
       {/* Painel de auditoria */}
       {tab === 'audit' && (
         <>
@@ -814,6 +852,22 @@ export default function Admin() {
           {toast.msg}
         </div>
       )}
+      {tab === 'security' && (
+        <SecurityTab />
+      )}
+
+      {tab === 'blog' && (
+        <BlogTab />
+      )}
+
+      {tab === 'all' && (
+        <AllRequestsTab />
+      )}
+
+      {tab === 'assisted' && (
+        <AssistedTab />
+      )}
+
     </section>
   );
 }
@@ -962,7 +1016,7 @@ function VerificationsPanel({ showToast }) {
   );
 }
 
-function ReportsPanel({ showToast }) {
+function ReportsPanel({ showToast, onChange }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openReport, setOpenReport] = useState(null); // { report, messages }
@@ -970,7 +1024,7 @@ function ReportsPanel({ showToast }) {
   const load = () => {
     setLoading(true);
     api.get('/admin/reports', { params: { only_open: true } })
-      .then(({ data }) => setItems(data))
+      .then(({ data }) => { setItems(data); onChange?.(); })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };

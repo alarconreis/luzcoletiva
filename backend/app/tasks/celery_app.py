@@ -2,6 +2,7 @@
 Instância do Celery para processamento assíncrono.
 """
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import settings
 
@@ -25,8 +26,16 @@ celery_app.conf.update(
 
 # Tarefas agendadas
 celery_app.conf.beat_schedule = {
+    'auto-confirm-deliveries-daily': {
+        'task': 'tasks.auto_confirm_deliveries',
+        'schedule': crontab(hour=3, minute=0),  # 03:00 UTC diariamente
+    },
     "purge-expired-verifications-daily": {
         "task": "tasks.purge_expired_verifications",
         "schedule": 86400.0,  # 24h
+    },
+    "notify-admin-verify-pending-daily": {
+        "task": "tasks.notify_admin_verify_pending",
+        "schedule": crontab(hour=12, minute=0),  # 09:00 BRT = 12:00 UTC
     },
 }

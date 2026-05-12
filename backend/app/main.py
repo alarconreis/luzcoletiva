@@ -13,7 +13,7 @@ from app.core.limiter import limiter
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.migrations import run_migrations
-from app.routes import admin, auth, help as help_routes, profile, stories, verify as verify_routes, rating as rating_routes
+from app.routes import admin, auth, help as help_routes, profile, verify as verify_routes, rating as rating_routes, scan, blog
 
 logging.basicConfig(level=logging.INFO if not settings.DEBUG else logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ app = FastAPI(
     version=settings.APP_VERSION,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 
@@ -44,11 +45,12 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(profile.router)
-app.include_router(stories.router)
 app.include_router(admin.router)
 app.include_router(help_routes.router)
 app.include_router(verify_routes.router)
 app.include_router(rating_routes.router)
+app.include_router(scan.router)
+app.include_router(blog.router)
 
 
 @app.get("/", tags=["health"])

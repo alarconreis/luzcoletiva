@@ -73,6 +73,9 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const { data } = await api.post('/login', { email, password });
+      if (data.require_totp) {
+        return { ok: true, totp_required: true, challenge_token: data.challenge_token };
+      }
       if (data.otp_required) {
         return { ok: true, otp_required: true, otp_token: data.otp_token, phone_hint: data.phone_hint };
       }
@@ -98,6 +101,19 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const verifyTotp = async (challenge_token, code, is_backup = false) => {
+    setLoading(true);
+    try {
+      const { data } = await api.post('/verify-totp', { challenge_token, code, is_backup });
+      persist(data.user);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.response?.data?.detail || 'Código TOTP inválido' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateUser = (patch) => {
     setUser((prev) => {
       const next = { ...prev, ...patch };
@@ -107,7 +123,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, verifyOtp, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, register, login, verifyOtp, verifyTotp, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

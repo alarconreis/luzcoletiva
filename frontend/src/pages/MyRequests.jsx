@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, MapPin, MessageCircle, Paperclip, X, DollarSign } from 'lucide-react';
+import { Plus, MapPin, MessageCircle, Paperclip, X, DollarSign, AlertTriangle} from 'lucide-react';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CATEGORIES, CATEGORY_LABEL, STATES, STATUS_COLOR, STATUS_LABEL } from '../constants.js';
 
+import { useNoIndex } from '../components/NoIndex.jsx';
 export default function MyRequests() {
+  useNoIndex();
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
-    title: '', description: '', category: 'alimentacao', city: '', state: 'SP', value: '',
+    title: '', description: '', category: 'livros', city: '', state: 'SP', value: '',
   });
   const [docFile, setDocFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -39,7 +41,7 @@ export default function MyRequests() {
 
   const resetForm = () => {
     setCreating(false);
-    setForm({ title: '', description: '', category: 'alimentacao', city: '', state: 'SP', value: '' });
+    setForm({ title: '', description: '', category: 'livros', city: '', state: 'SP', value: '' });
     setDocFile(null);
     setError('');
   };
@@ -51,7 +53,6 @@ export default function MyRequests() {
       setError('O valor deve ser entre R$ 50,00 e R$ 300,00.');
       return;
     }
-    if (!docFile) { setError('Anexe um documento de comprovação antes de enviar.'); return; }
     setError('');
     setSubmitting(true);
     try {
@@ -62,7 +63,7 @@ export default function MyRequests() {
       fd.append('city', form.city);
       fd.append('state', form.state);
       fd.append('value', val.toFixed(2));
-      fd.append('document', docFile);
+      if (docFile) fd.append('document', docFile);
       await api.post('/help-requests', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       resetForm();
       load();
@@ -82,10 +83,33 @@ export default function MyRequests() {
             Acompanhe seus pedidos e converse com quem se ofereceu.
           </p>
         </div>
-        <button onClick={() => setCreating(true)} className="btn-primary" disabled={creating}>
-          <Plus size={18} /> Novo pedido
-        </button>
+        {user?.is_verified ? (
+          <button onClick={() => setCreating(true)} className="btn-primary" disabled={creating}>
+            <Plus size={18} /> Novo pedido
+          </button>
+        ) : (
+          <Link to="/verify-identity" className="btn-primary">
+            <AlertTriangle size={18} /> Verificar identidade
+          </Link>
+        )}
       </div>
+
+      {!user?.is_verified && (
+        <div className="card p-4 mb-6 bg-sun-50 border-sun-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className="text-sun-700 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-display font-semibold text-ink-900 mb-1">Verificação de identidade obrigatória</h3>
+              <p className="text-sm text-ink-700 mb-3">
+                Para criar pedidos de ajuda, você precisa verificar sua identidade. É rápido, seguro, e protege a comunidade.
+              </p>
+              <Link to="/verify-identity" className="btn-secondary text-sm">
+                Verificar agora
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {creating && (
         <div className="card p-6 mb-8 bg-sun-50/50">
@@ -95,7 +119,7 @@ export default function MyRequests() {
               <label className="block font-display font-medium text-sm text-ink-900 mb-1.5">Título</label>
               <input type="text" required minLength={5} maxLength={120}
                 className="input-field"
-                placeholder="Ex: Preciso de cesta básica para minha família"
+                placeholder={CATEGORIES.find(c => c.value === form.category)?.titlePlaceholder || 'Ex: Livro X que preciso'}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </div>
@@ -103,7 +127,7 @@ export default function MyRequests() {
               <label className="block font-display font-medium text-sm text-ink-900 mb-1.5">Descrição</label>
               <textarea required minLength={10} maxLength={2000} rows={4}
                 className="input-field resize-none"
-                placeholder="Conte um pouco sobre o que você precisa..."
+                placeholder={CATEGORIES.find(c => c.value === form.category)?.placeholder || 'Descreva claramente o que você precisa.'}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
@@ -152,10 +176,10 @@ export default function MyRequests() {
             {/* Upload de documento obrigatório */}
             <div>
               <label className="block font-display font-medium text-sm text-ink-900 mb-1.5">
-                Documento de comprovação <span className="text-red-600">*</span>
+                Documento de comprovação <span className="text-ink-500 font-normal">(opcional)</span>
               </label>
               <p className="text-xs text-ink-700 mb-2">
-                Anexe um comprovante, orçamento ou qualquer documento que demonstre a necessidade.
+                Se quiser, anexe orçamento, foto do item desejado, ou outro documento.
                 Aceito: PDF, JPEG, PNG, WebP — máx. 10 MB.
               </p>
               <input
@@ -189,7 +213,7 @@ export default function MyRequests() {
             )}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={resetForm} className="btn-ghost" disabled={submitting}>Cancelar</button>
-              <button type="submit" className="btn-primary" disabled={submitting || !docFile}>
+              <button type="submit" className="btn-primary" disabled={submitting}>
                 {submitting ? 'Enviando…' : 'Enviar para aprovação'}
               </button>
             </div>

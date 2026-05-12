@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Heart, Filter } from 'lucide-react';
+import { MapPin, Heart, Filter, AlertTriangle} from 'lucide-react';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CATEGORIES, CATEGORY_LABEL, STATES, STATUS_COLOR, STATUS_LABEL, TRUST_BADGE, TRUST_LABEL, memberSince } from '../constants.js';
 
+import { useNoIndex } from '../components/NoIndex.jsx';
 export default function HelpRequests() {
+  useNoIndex();
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,23 @@ export default function HelpRequests() {
           Pessoas pedindo ajuda agora. Escolha um pedido e ofereça apoio.
         </p>
       </div>
+
+      {!user?.is_verified && (
+        <div className="card p-4 mb-6 bg-sun-50 border-sun-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className="text-sun-700 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-display font-semibold text-ink-900 mb-1">Verificação de identidade obrigatória</h3>
+              <p className="text-sm text-ink-700 mb-3">
+                Para oferecer ajuda em pedidos, você precisa verificar sua identidade. Isso protege a confiança da comunidade.
+              </p>
+              <Link to="/verify-identity" className="btn-secondary text-sm">
+                Verificar agora
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card p-4 mb-6 flex flex-wrap gap-3 items-center">
         <Filter size={18} className="text-ink-700" />

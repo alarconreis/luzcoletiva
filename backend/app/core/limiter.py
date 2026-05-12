@@ -20,14 +20,19 @@ from app.core.config import settings
 
 def _real_ip(request) -> str:
     """
-    Pega o IP real do cliente quando há proxy reverso (Caddy) na frente.
-    Caddy envia X-Forwarded-For automaticamente.
-    Cai no remote_address se o header não existir.
+    Pega o IP real do cliente atrás de Cloudflare + Caddy.
+    Ordem de confiança:
+      1. CF-Connecting-IP (Cloudflare — não forjável por cliente HTTP comum)
+      2. X-Forwarded-For (primeiro IP)
+      3. remote_address
+    Atrás de Cloudflare, X-Forwarded-For pode ser manipulado;
+    CF-Connecting-IP é o único confiável.
     """
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        return cf_ip.strip()
     xff = request.headers.get("x-forwarded-for")
     if xff:
-        # X-Forwarded-For pode ter múltiplos IPs: client, proxy1, proxy2...
-        # O primeiro é o cliente original.
         return xff.split(",")[0].strip()
     return get_remote_address(request)
 

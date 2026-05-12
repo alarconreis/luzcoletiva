@@ -1,0 +1,29 @@
+# Luz Coletiva — robots.txt
+# Permite indexação de páginas públicas, bloqueia rotas autenticadas
+
+User-agent: *
+Allow: /
+Allow: /como-funciona
+Allow: /sobre
+Allow: /faq
+Allow: /privacidade
+Allow: /termos
+
+# Rotas autenticadas — não indexar
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /help-requests
+Disallow: /my-requests
+Disallow: /verify-identity
+
+# Rotas de auth — entrypoints, mas sem conteúdo único
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+
+# API
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://luzcoletiva.com.br/sitemap.xml

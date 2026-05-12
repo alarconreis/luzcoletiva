@@ -63,6 +63,17 @@ class UserRegister(BaseModel):
     rg: Optional[str] = Field(None, max_length=30)
     # Pessoa jurídica
     cnpj: Optional[str] = Field(None, max_length=18)
+    # LGPD — aceites obrigatórios (registrados com IP e versão pelo backend)
+    accept_terms: bool = False
+    accept_privacy: bool = False
+
+    @model_validator(mode="after")
+    def _consent_required(self) -> "UserRegister":
+        if not self.accept_terms or not self.accept_privacy:
+            raise ValueError(
+                "É necessário aceitar os Termos de Uso e a Política de Privacidade"
+            )
+        return self
 
     @field_validator("password")
     @classmethod
@@ -110,6 +121,32 @@ class UserRegister(BaseModel):
             if not self.cnpj:
                 raise ValueError("CNPJ é obrigatório para empresa ou ONG")
         return self
+
+
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def _normalize_phone(cls, v):
+        """Normaliza phone: só dígitos. Permite vazio/None."""
+        if v is None or v == "":
+            return v
+        digits = "".join(c for c in str(v) if c.isdigit())
+        if len(digits) < 10 or len(digits) > 15:
+            raise ValueError("Telefone deve ter entre 10 e 15 dígitos (com DDD)")
+        return digits
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return _validate_password_strength(v)
 
 
 class UserLogin(BaseModel):
@@ -182,15 +219,6 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
-
-
-class StoryOut(BaseModel):
-    id: int
-    title: str
-    excerpt: str
-    author: str
-    image_url: str
-    category: str
 
 
 class AdminUserOut(BaseModel):

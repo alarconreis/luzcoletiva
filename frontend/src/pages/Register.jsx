@@ -4,6 +4,8 @@ import { User, Mail, Lock, ArrowRight, HandHeart, HelpingHand, CreditCard, FileT
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
 
+import { useNoIndex } from '../components/NoIndex.jsx';
+import CameraCapture from '../components/CameraCapture.jsx';
 const formatCpf = (v) => {
   const d = v.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 3) return d;
@@ -81,6 +83,7 @@ function FileField({ label, icon: Icon, accept, file, onChange, onClear, hint })
 }
 
 export default function Register() {
+  useNoIndex();
   const { register, loading } = useAuth();
   const [params] = useSearchParams();
   const [pending, setPending] = useState(false);
@@ -97,7 +100,11 @@ export default function Register() {
     cnpj: '',
   });
   const [selfie, setSelfie] = useState(null);
+  const [selfieMode, setSelfieMode] = useState('webcam'); // 'webcam' ou 'upload'
+  const [selfieWasUploaded, setSelfieWasUploaded] = useState(false);
   const [docPhoto, setDocPhoto] = useState(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -113,7 +120,19 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
-    if (form.password.length < 8) { setError('A senha deve ter no mínimo 8 caracteres.'); return; }
+    {
+      const p = form.password;
+      const missing = [];
+      if (p.length < 8) missing.push('8 caracteres');
+      if (!/[A-Z]/.test(p)) missing.push('uma letra maiúscula');
+      if (!/[a-z]/.test(p)) missing.push('uma letra minúscula');
+      if (!/\d/.test(p)) missing.push('um número');
+      if (!/[^A-Za-z0-9]/.test(p)) missing.push('um caractere especial');
+      if (missing.length) {
+        setError(`A senha deve conter ao menos: ${missing.join(', ')}.`);
+        return;
+      }
+    }
     const phoneDigits = form.phone.replace(/\D/g, '');
     if (phoneDigits.length < 10 || phoneDigits.length > 11) { setError('Número de telefone inválido.'); return; }
     if (!isPj) {
@@ -124,6 +143,10 @@ export default function Register() {
     }
     if (!selfie) { setError('Envie uma selfie para verificação.'); return; }
     if (!docPhoto) { setError('Envie uma foto do seu documento.'); return; }
+    if (!acceptTerms || !acceptPrivacy) {
+      setError('É necessário aceitar os Termos de Uso e a Política de Privacidade.');
+      return;
+    }
 
     const fd = new FormData();
     fd.append('name', form.name);
@@ -139,7 +162,10 @@ export default function Register() {
       fd.append('cnpj', form.cnpj);
     }
     fd.append('selfie', selfie);
+    fd.append('selfie_was_uploaded', selfieWasUploaded ? 'true' : 'false');
     fd.append('doc_photo', docPhoto);
+    fd.append('accept_terms', 'true');
+    fd.append('accept_privacy', 'true');
 
     const result = await register(fd);
     if (result.ok) setPending(true);
@@ -355,24 +381,80 @@ export default function Register() {
               <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" />
               <input
                 type="password" required minLength={8}
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo"
                 className="input-field pl-11"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
             </div>
+            <p className="text-xs text-ink-400 mt-1">
+              Pelo menos 8 caracteres, incluindo uma maiúscula, uma minúscula, um número
+              e um caractere especial (ex.: !@#$%).
+            </p>
           </div>
 
-          {/* Selfie */}
-          <FileField
-            label="Selfie (foto do rosto)"
-            icon={Camera}
-            accept="image/jpeg,image/png,image/webp"
-            file={selfie}
-            onChange={setSelfie}
-            onClear={() => setSelfie(null)}
-            hint="Tire uma foto clara do seu rosto. Usado apenas para verificação."
-          />
+          {/* Selfie — webcam preferida + fallback upload */}
+          <div className="space-y-2">
+            <label className="block font-display font-medium text-sm text-ink-900 mb-1.5">
+              Selfie (foto do rosto)
+            </label>
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => { setSelfieMode('webcam'); setSelfie(null); setSelfieWasUploaded(false); }}
+                className={`text-sm py-2 px-3 rounded-lg flex-1 transition-colors ${selfieMode === 'webcam' ? 'bg-sky-600 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'}`}
+              >
+                📹 Webcam (recomendado)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSelfieMode('upload'); setSelfie(null); setSelfieWasUploaded(true); }}
+                className={`text-sm py-2 px-3 rounded-lg flex-1 transition-colors ${selfieMode === 'upload' ? 'bg-sky-600 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'}`}
+              >
+                📁 Enviar arquivo
+              </button>
+            </div>
+            {selfieMode === 'webcam' && !selfie && (
+              <CameraCapture
+                facingMode="user"
+                aspect="square"
+                hint="Posicione seu rosto centralizado e bem iluminado. Olhe para a câmera."
+                onCapture={(blob) => {
+                  const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+                  setSelfie(file);
+                  setSelfieWasUploaded(false);
+                }}
+              />
+            )}
+            {selfieMode === 'webcam' && selfie && (
+              <div className="card p-3 bg-leaf-50 border-leaf-200 text-leaf-800 text-sm flex items-center justify-between">
+                <span>✓ Selfie capturada com sucesso</span>
+                <button
+                  type="button"
+                  onClick={() => setSelfie(null)}
+                  className="text-xs text-leaf-700 hover:text-leaf-800 underline"
+                >
+                  Capturar outra
+                </button>
+              </div>
+            )}
+            {selfieMode === 'upload' && (
+              <>
+                <FileField
+                  label=""
+                  icon={Camera}
+                  accept="image/jpeg,image/png,image/webp"
+                  file={selfie}
+                  onChange={setSelfie}
+                  onClear={() => setSelfie(null)}
+                  hint="JPEG, PNG ou WebP. Use uma foto recente do seu rosto."
+                />
+                <p className="text-xs text-sun-700 italic mt-1">
+                  ⚠ Selfies enviadas como arquivo passam por verificação manual mais rigorosa, podendo levar mais tempo.
+                </p>
+              </>
+            )}
+          </div>
 
           {/* Foto do documento */}
           <FileField
@@ -390,6 +472,40 @@ export default function Register() {
               ? 'CNPJ é usado apenas para verificação e não será compartilhado.'
               : 'CPF, RG e documentos são usados apenas para verificação de identidade.'}
           </p>
+
+          {/* LGPD — aceites obrigatórios */}
+          <div className="space-y-3 pt-2 border-t border-ink-100">
+            <label className="flex items-start gap-2 text-sm font-body text-ink-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-1 rounded border-ink-300"
+              />
+              <span>
+                Li e aceito os{' '}
+                <Link to="/termos" target="_blank" className="text-sky-600 hover:text-sky-800 underline">
+                  Termos de Uso
+                </Link>.
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm font-body text-ink-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptPrivacy}
+                onChange={(e) => setAcceptPrivacy(e.target.checked)}
+                className="mt-1 rounded border-ink-300"
+              />
+              <span>
+                Li e concordo com a{' '}
+                <Link to="/privacidade" target="_blank" className="text-sky-600 hover:text-sky-800 underline">
+                  Política de Privacidade
+                </Link>{' '}
+                e autorizo o tratamento dos meus dados pessoais para fins de cadastro,
+                verificação e operação da plataforma (LGPD, Art. 7º, I).
+              </span>
+            </label>
+          </div>
 
           {error && (
             <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm font-body">

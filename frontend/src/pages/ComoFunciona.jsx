@@ -10,6 +10,7 @@ import IllusAsk from '../components/illustrations/IllusAsk.jsx';
 import IllusHelp from '../components/illustrations/IllusHelp.jsx';
 import IllusChat from '../components/illustrations/IllusChat.jsx';
 
+import PageMeta from '../components/PageMeta.jsx';
 const TRACKS = [
   { id: 'visitor',   label: 'Sou novo aqui', icon: Sparkles },
   { id: 'requester', label: 'Preciso de ajuda', icon: HelpingHand },
@@ -20,7 +21,13 @@ export default function ComoFunciona() {
   const [track, setTrack] = useState('visitor');
 
   return (
-    <div className="bg-gradient-to-b from-white via-sun-50/30 to-white">
+    <>
+      <PageMeta
+      title="Como funciona"
+      description="Entenda como funciona a Luz Coletiva: cadastro, verificação de identidade, criação de pedidos, ofertas de ajuda, e entrega via Correios ou ponto de retirada."
+      path="/como-funciona"
+      />
+      <div className="bg-gradient-to-b from-white via-sun-50/30 to-white">
       {/* HERO */}
       <section className="relative overflow-hidden bg-sunrise-soft grain pt-16 pb-40 px-6">
         <div className="max-w-5xl mx-auto text-center">
@@ -93,6 +100,7 @@ export default function ComoFunciona() {
         </div>
       </section>
     </div>
+    </>
   );
 }
 
@@ -114,7 +122,7 @@ function VisitorTrack() {
         steps={[
           { icon: UserPlus, title: 'Cadastro', text: 'Você cria conta dizendo se vem ajudar ou pedir ajuda. Leva menos de 2 minutos.' },
           { icon: ShieldCheck, title: 'Verificação', text: 'Confirmamos sua identidade pra proteger todo mundo na rede. Você verifica uma vez só.' },
-          { icon: MessageCircle, title: 'Encontro', text: 'Pedidos e ofertas se encontram. Vocês conversam pelo chat seguro e combinam como vai funcionar.' },
+          { icon: MessageCircle, title: 'Encontro', text: 'Pedidos e ofertas se encontram. Vocês definem como será feito o envio do item necessitado, tudo de forma segura e podem usar o chat privado para eventuais dúvidas.' },
         ]}
       />
 
@@ -144,7 +152,7 @@ function RequesterTrack() {
         title="Três passos pra encontrar quem pode ajudar"
         steps={[
           { icon: UserPlus, title: '1. Cadastre-se como solicitante', text: 'Crie sua conta e faça a verificação de identidade. É rápido e protege todo mundo.' },
-          { icon: HelpingHand, title: '2. Crie um pedido', text: 'Conte o que você precisa: alimentação, educação, saúde, instrumentos musicais ou livros. Adicione uma descrição clara e sua cidade.' },
+          { icon: HelpingHand, title: '2. Crie um pedido', text: 'Conte o que você precisa: cursos, exames, equipamentos ou livros. Adicione uma descrição clara e sua cidade.' },
           { icon: MessageCircle, title: '3. Receba ofertas e converse', text: 'Quando alguém se oferecer, você verá o nome e a mensagem. Aceite, recuse ou converse pelo chat antes de decidir.' },
         ]}
       />
@@ -166,7 +174,7 @@ function HelperTrack() {
       <Block
         eyebrow="Pra quem oferece"
         title="Pequenos gestos, grandes histórias"
-        text="Você não precisa ter muito pra ajudar. Tempo, conhecimento, um livro que você não usa mais, uma cesta básica, uma escuta. Toda forma de presença vale, e a outra pessoa decide o que serve melhor pra ela."
+        text="Você não precisa ter muito pra ajudar. Um livro que você não usa mais, uma roupa em bom estado, um caderno escolar, um apoio prático. Toda forma de presença vale, e a outra pessoa decide o que serve melhor pra ela."
         illus={<IllusHelp className="w-full max-w-md" />}
       />
 
@@ -356,5 +364,5 @@ function DoNotSection() {
         ))}
       </div>
     </section>
-  );
+);
 }
