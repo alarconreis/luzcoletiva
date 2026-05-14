@@ -132,6 +132,20 @@ def run_migrations() -> None:
             "CREATE INDEX IF NOT EXISTS ix_users_deleted_at ON users (deleted_at)"
         ))
 
+        # Blog — contador de curtidas (idempotente)
+        conn.execute(text("""
+            DO $$ BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.tables WHERE table_name='blog_posts'
+                ) AND NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='blog_posts' AND column_name='likes_count'
+                ) THEN
+                    ALTER TABLE blog_posts ADD COLUMN likes_count INTEGER NOT NULL DEFAULT 0;
+                END IF;
+            END$$;
+        """))
+
         # Atendimento assistido — endereço admin-only
         for col, ddl in [
             ("cep", "ALTER TABLE assisted_profiles ADD COLUMN cep VARCHAR(8)"),

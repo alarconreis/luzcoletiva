@@ -37,6 +37,12 @@ def _real_ip(request) -> str:
     return get_remote_address(request)
 
 
+def real_ip(request) -> str:
+    """Wrapper público para `_real_ip` — uso em rotas que precisam
+    derivar identidade do cliente (ex.: dedup de curtidas por IP)."""
+    return _real_ip(request)
+
+
 limiter = Limiter(
     key_func=_real_ip,
     storage_uri=settings.REDIS_URL,

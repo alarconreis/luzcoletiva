@@ -42,8 +42,8 @@ export default function Footer() {
             <ul className="mt-4 space-y-2 font-body text-white/80">
               <li><Link to="/como-funciona" className="hover:text-sun-400 transition-colors">Como funciona</Link></li>
               <li><Link to="/sobre" className="hover:text-sun-400 transition-colors">Sobre nós</Link></li>
-              <li><Link to="/faq" className="hover:text-sun-400 transition-colors">Perguntas frequentes</Link>
-              <Link to="/blog" className="hover:text-ink-900">Blog</Link></li>
+              <li><Link to="/faq" className="hover:text-sun-400 transition-colors">Perguntas frequentes</Link></li>
+              <li><Link to="/blog" className="hover:text-sun-400 transition-colors">Blog</Link></li>
               <li><Link to="/privacidade" className="hover:text-sun-400 transition-colors">Política de Privacidade</Link></li>
               <li><Link to="/termos" className="hover:text-sun-400 transition-colors">Termos de Uso</Link></li>
             </ul>

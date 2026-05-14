@@ -89,20 +89,61 @@ export default function Privacidade() {
           <li>Logs de tentativas de acesso e ações administrativas.</li>
         </ul>
 
-        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">8. Cookies</h2>
+        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">8. Cookies e armazenamento local</h2>
+        <p>Usamos:</p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li><strong>Cookie de sessão</strong> (HTTP-only, SameSite strict) para autenticação. Necessário para o funcionamento da plataforma — não pode ser desativado.</li>
+          <li><strong>Armazenamento local</strong> (<code>localStorage</code>) para preferência de consentimento de analytics e dados auxiliares de sessão.</li>
+        </ul>
+        <p>Não usamos cookies de rastreamento publicitário nem fingerprinting.</p>
+
+        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">9. Analytics (com consentimento)</h2>
         <p>
-          Usamos apenas cookies estritamente necessários para autenticação (cookie de sessão
-          HTTP-only, SameSite strict). Não usamos cookies de rastreamento publicitário,
-          analytics de terceiros nem fingerprinting.
+          Utilizamos <strong>Google Analytics 4</strong> (Google LLC, EUA) para entender como a plataforma é usada e melhorá-la.
+          O GA só é carregado <strong>após você aceitar</strong> o banner de consentimento exibido em sua primeira visita.
+        </p>
+        <p><strong>Dados coletados pelo GA quando ativo:</strong></p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li>Páginas visitadas (URL e título)</li>
+          <li>Tempo de permanência</li>
+          <li>Tipo de dispositivo, navegador e sistema operacional</li>
+          <li>País/região (sem cidade nem coordenadas precisas)</li>
+          <li>Endereço IP <strong>anonimizado</strong> (último octeto removido antes da coleta)</li>
+          <li>Origem do tráfego (link de onde você veio)</li>
+        </ul>
+        <p><strong>Dados NÃO coletados:</strong></p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li>Conteúdo de pedidos</li>
+          <li>Mensagens entre usuários</li>
+          <li>Informações de pagamento</li>
+          <li>Documentos enviados (RG, selfie)</li>
+          <li>E-mails, telefones ou nomes</li>
+        </ul>
+        <p>
+          <strong>Base legal (LGPD art. 7º, I):</strong> consentimento livre, informado e inequívoco, fornecido por meio do banner de cookies.
+        </p>
+        <p>
+          <strong>Transferência internacional:</strong> Os dados são processados em servidores do Google nos Estados Unidos. O Google adere a salvaguardas adequadas (cláusulas contratuais padrão da UE). Mais detalhes na{' '}
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-sky-800 underline">
+            Política de Privacidade do Google
+          </a>.
+        </p>
+        <p><strong>Como revogar o consentimento:</strong></p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li>Limpe os cookies/armazenamento local deste site no seu navegador</li>
+          <li>O banner reaparecerá e você poderá optar novamente</li>
+        </ul>
+        <p>
+          <strong>Retenção:</strong> 14 meses (padrão GA4, configurado pelo administrador).
         </p>
 
-        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">9. Crianças e adolescentes</h2>
+        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">10. Crianças e adolescentes</h2>
         <p>
           A plataforma não é destinada a menores de 18 anos. Caso identifiquemos cadastro
           de menor sem autorização dos responsáveis, a conta será removida imediatamente.
         </p>
 
-        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">10. Encarregado de dados (DPO)</h2>
+        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">11. Encarregado de dados (DPO)</h2>
         <p>
           Para exercer seus direitos, sanar dúvidas ou registrar reclamações sobre o
           tratamento de dados:
@@ -121,7 +162,7 @@ export default function Privacidade() {
           </a>.
         </p>
 
-        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">11. Notificação de incidente</h2>
+        <h2 className="font-display font-bold text-xl text-ink-900 mt-8">12. Notificação de incidente</h2>
         <p>
           Em caso de incidente de segurança que possa acarretar risco aos titulares,
           comunicaremos a ANPD e os usuários afetados em prazo razoável, conforme Art. 48

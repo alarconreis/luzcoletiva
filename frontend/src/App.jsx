@@ -20,8 +20,15 @@ import BlogPost from './pages/BlogPost.jsx';
 import ComoFunciona from './pages/ComoFunciona.jsx';
 import Privacidade from './pages/Privacidade.jsx';
 import Termos from './pages/Termos.jsx';
+import CookieBanner from './components/CookieBanner.jsx';
+import { initAnalytics } from './hooks/useAnalytics.js';
 
 export default function App() {
+  // Inicializa GA se user já consentiu em visita anterior
+  if (typeof window !== 'undefined') {
+    initAnalytics();
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -55,6 +62,7 @@ export default function App() {
             }
           />
         </Routes>
+      <CookieBanner />
       </main>
       <Footer />
     </div>

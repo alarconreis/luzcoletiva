@@ -72,6 +72,7 @@ class BlogPostOut(BaseModel):
     source_name: Optional[str]
     published: bool
     published_at: Optional[datetime]
+    likes_count: int = 0
     created_at: datetime
 
 
@@ -89,3 +90,11 @@ class BlogPostPublic(BaseModel):
     source_url: Optional[str]
     source_name: Optional[str]
     published_at: Optional[datetime]
+    likes_count: int = 0
+
+
+class BlogPostLikeResponse(BaseModel):
+    """Resposta do endpoint de curtida: contagem atualizada e se foi
+    uma nova curtida (false quando esse IP já havia curtido)."""
+    likes_count: int
+    liked: bool

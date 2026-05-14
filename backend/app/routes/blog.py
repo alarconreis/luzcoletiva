@@ -1,17 +1,31 @@
 """Rotas públicas do blog."""
+import hashlib
+import hmac
 import pathlib
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
+from sqlalchemy import update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
-from app.core.limiter import limiter
+from app.core.limiter import limiter, real_ip
 from app.core.uploads import UPLOAD_DIR
-from app.models.blog import BlogPost
-from app.schemas.blog import BlogPostPublic
+from app.models.blog import BlogPost, BlogPostLike
+from app.schemas.blog import BlogPostLikeResponse, BlogPostPublic
 
 router = APIRouter(prefix="/api/blog", tags=["blog"])
+
+
+def _hash_ip(ip: str) -> str:
+    """HMAC-SHA256(ip, JWT_SECRET) — armazenamos só o hash para LGPD."""
+    return hmac.new(
+        settings.JWT_SECRET.encode("utf-8"),
+        ip.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 @router.get("/posts", response_model=list[BlogPostPublic])
@@ -39,6 +53,47 @@ def get_post(slug: str, request: Request, db: Session = Depends(get_db)):
     if not post:
         raise HTTPException(404, "Post não encontrado")
     return post
+
+
+@router.post("/posts/{slug}/like", response_model=BlogPostLikeResponse)
+@limiter.limit("10/minute")
+def like_post(slug: str, request: Request, db: Session = Depends(get_db)):
+    """Curte um post (público, sem autenticação).
+    Dedup por IP hasheado: o mesmo IP só conta uma vez por post.
+    Idempotente — chamadas repetidas retornam a contagem atual com
+    `liked=False`."""
+    post = db.query(BlogPost).filter(
+        BlogPost.slug == slug,
+        BlogPost.published == True,
+    ).first()
+    if not post:
+        raise HTTPException(404, "Post não encontrado")
+
+    ip_hash = _hash_ip(real_ip(request))
+
+    # INSERT ... ON CONFLICT DO NOTHING — retorna a row inserida ou None.
+    stmt = (
+        pg_insert(BlogPostLike)
+        .values(post_id=post.id, ip_hash=ip_hash)
+        .on_conflict_do_nothing(index_elements=["post_id", "ip_hash"])
+        .returning(BlogPostLike.id)
+    )
+    inserted_id = db.execute(stmt).scalar()
+
+    if inserted_id is None:
+        # Esse IP já curtiu — retorna a contagem atual sem incrementar.
+        db.rollback()
+        return BlogPostLikeResponse(likes_count=post.likes_count, liked=False)
+
+    # Incremento atômico para evitar perda em corrida.
+    db.execute(
+        update(BlogPost)
+        .where(BlogPost.id == post.id)
+        .values(likes_count=BlogPost.likes_count + 1)
+    )
+    db.commit()
+    db.refresh(post)
+    return BlogPostLikeResponse(likes_count=post.likes_count, liked=True)
 
 
 @router.get("/images/{filename}")

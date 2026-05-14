@@ -8,4 +8,4 @@ from app.models.verification import VerificationAttempt, VerificationStatus  # n
 from app.models.email_log import EmailLog  # noqa: F401
 
 from app.models.assisted import AssistedProfile  # noqa
-from .blog import BlogPost
+from .blog import BlogPost, BlogPostLike  # noqa: F401

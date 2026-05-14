@@ -1,8 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ExternalLink, Calendar, ArrowLeft, AlertCircle } from 'lucide-react';
+import { ExternalLink, Calendar, ArrowLeft, AlertCircle, Heart } from 'lucide-react';
 import api from '../services/api.js';
 import PageMeta from '../components/PageMeta.jsx';
+
+const LIKED_KEY = 'luz_blog_liked';
+
+function getLikedSet() {
+  try {
+    const raw = localStorage.getItem(LIKED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch {
+    return new Set();
+  }
+}
+
+function markLiked(slug) {
+  try {
+    const s = getLikedSet();
+    s.add(slug);
+    localStorage.setItem(LIKED_KEY, JSON.stringify([...s]));
+  } catch {
+    /* localStorage indisponível — sem-op */
+  }
+}
 
 const DISCLAIMER = "Conteúdo informativo. Para doação verificada, use a plataforma. Doações externas são por sua conta e risco.";
 
@@ -54,13 +76,39 @@ export default function BlogPost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [likes, setLikes] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
 
   useEffect(() => {
     api.get(`/blog/posts/${slug}`)
-      .then(({ data }) => setPost(data))
+      .then(({ data }) => {
+        setPost(data);
+        setLikes(data.likes_count || 0);
+        setLiked(getLikedSet().has(data.slug));
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  async function handleLike() {
+    if (!post || liked || likeBusy) return;
+    setLikeBusy(true);
+    setLiked(true);
+    setLikes(n => n + 1);
+    try {
+      const { data } = await api.post(`/blog/posts/${post.slug}/like`);
+      setLikes(data.likes_count);
+      setLiked(true);
+      markLiked(post.slug);
+    } catch {
+      // Reverte UI em caso de erro; mantém botão habilitado para retry.
+      setLiked(false);
+      setLikes(n => Math.max(0, n - 1));
+    } finally {
+      setLikeBusy(false);
+    }
+  }
 
   if (loading) return <section className="max-w-3xl mx-auto px-6 py-12"><p>Carregando...</p></section>;
 
@@ -128,6 +176,25 @@ export default function BlogPost() {
             </a>
           </div>
         )}
+
+        <div className="flex items-center gap-3 mt-8">
+          <button
+            type="button"
+            onClick={handleLike}
+            disabled={liked || likeBusy}
+            aria-pressed={liked}
+            aria-label={liked ? 'Você curtiu este post' : 'Curtir este post'}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${
+              liked
+                ? 'bg-rose-50 border-rose-200 text-rose-600 cursor-default'
+                : 'bg-white border-ink-200 text-ink-700 hover:border-rose-300 hover:text-rose-600'
+            } ${likeBusy ? 'opacity-60' : ''}`}
+          >
+            <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+            <span className="text-sm font-medium">{liked ? 'Curtido' : 'Curtir'}</span>
+            <span className="text-sm tabular-nums text-ink-700">· {likes}</span>
+          </button>
+        </div>
 
         <div className="card p-4 bg-sun-50 border-sun-200 mt-8 flex gap-3 items-start">
           <AlertCircle className="text-sun-700 shrink-0 mt-0.5" size={18} />
