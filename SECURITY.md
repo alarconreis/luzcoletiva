@@ -146,7 +146,27 @@ Estado atual (atualizado em 2026-05-14):
 
 ## Histórico de incidentes
 
-Nenhum incidente reportado até a data desta política.
+### 2026-05-15 — Falha silenciosa de backup automatizado
+
+**Sintoma**: backups remotos no Backblaze B2 pararam em 12/maio. Última subida automática 22:24 BRT. Janela de 3 dias sem backup novo no remote.
+
+**Causa raiz**: cron tentava escrever output em `/var/log/luz-backup-cron.log` que não existia mais (provavelmente apagado por logrotate ou cleanup). User `reis` não tem permissão de escrita em `/var/log/`. Script morria na primeira linha de redirect, antes de executar a lógica de backup ou de alerta.
+
+**Detecção**: manual. Gerente verificou bucket B2 e notou ausência de uploads recentes.
+
+**Impacto**: nenhum dado perdido. Backups locais e remotos antigos intactos. Plataforma em fase inicial com pouca movimentação durante o gap.
+
+**Correção aplicada**:
+- Cron output movido pra `/opt/luzcoletiva/logs/backup-cron.log` (diretório do projeto, com permissão do user reis)
+- Permissão garantida em `/var/log/luz-backup.log` (chown reis:reis)
+- Validado: cron disparou em horário agendado, log gerou, backup subiu pro B2
+
+**Lições aprendidas**:
+- Lógica de alerta dentro do próprio script é insuficiente — script morto não consegue alertar
+- Backup mensal e semanal também ficaram com gap (cron único quebrou todos os tipos)
+- Necessário monitor heartbeat externo (planejado, não-prioritário)
+
+**Status**: RESOLVIDO em 2026-05-15 11:44 BRT
 
 ---
 
