@@ -10,6 +10,16 @@ source /opt/luzcoletiva/.env
 set +a
 
 LOG=/var/log/luz-backup.log
+# Healthchecks.io heartbeat
+hc_ping() {
+    # $1 = endpoint (vazio, /start, /fail)
+    if [ -z "${HEALTHCHECKS_PING_URL:-}" ]; then
+        return 0
+    fi
+    local endpoint="${1:-}"
+    curl -fsS -m 10 --retry 3 -o /dev/null "${HEALTHCHECKS_PING_URL}${endpoint}" 2>/dev/null || true
+}
+
 LOCAL_DIR=/opt/luzcoletiva/backups/postgres
 TS=$(date +%Y%m%d-%H%M%S)
 DOW=$(date +%u)
@@ -30,6 +40,7 @@ log() {
 }
 
 send_backup_alert() {
+  hc_ping "/fail"
   local exit_code="$1"
   local fail_line="$2"
 
@@ -84,6 +95,7 @@ trap 'rc=$?; log "ERRO: backup falhou (cod=${rc}, linha ${BASH_LINENO[0]})"; sen
 
 mkdir -p "${LOCAL_DIR}"
 
+hc_ping "/start"
 log "=== Iniciando backup (${TYPE}) ==="
 
 # 1. Dump cifrado
@@ -146,4 +158,5 @@ prune_remote "weekly" 28
 prune_remote "monthly" 180
 
 log "=== Backup concluído ==="
+hc_ping ""
 echo "" >> "$LOG"
