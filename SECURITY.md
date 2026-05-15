@@ -47,7 +47,8 @@ Esta política cobre:
 | CVE-2026-25645 | 5.3 | requests | 2.32.3 to 2.33.0 | 65dfa05 |
 | CVE-2026-34073 | 3.7 | cryptography | 46.0.5 to 46.0.7 | 65dfa05 |
 | CVE-2026-39892 | 6.5 | cryptography | 46.0.5 to 46.0.7 | 65dfa05 |
-| CVE-2026-2003 a 2007 | 4.0-8.1 | PostgreSQL | série 16 to 16.13 | base image |
+| CVE-2026-2003 a 2007 | 4.0-8.1 | PostgreSQL | 16.x to 16.13 | base image |
+| CVE-2026-2008+ (11 CVEs) | até 8.8 | PostgreSQL | 16.13 to 16.14 | base image 2026-05-15 |
 
 ### Mitigações aplicadas
 
@@ -67,7 +68,7 @@ Estado atual (atualizado em 2026-05-14):
 
 - Frontend: Caddy 2.11.3 + React 18 + Vite
 - Backend: FastAPI 0.121.0 / Uvicorn / Python 3.12.13
-- Database: PostgreSQL 16.13 (Alpine 3.23.4)
+- Database: PostgreSQL 16.14 (Alpine 3.23.4)
 - Cache: Redis 7.4.9
 - Async: Celery + Redis
 - Crypto: cryptography 46.0.7 / pyotp 2.9.0
@@ -180,4 +181,4 @@ Estado atual (atualizado em 2026-05-14):
 ---
 
 Política mantida por: Vinicius Reis (alarconreis@gmail.com) - Gerente CSIRT
-Última revisão: 2026-05-14
+Última revisão: 2026-05-15
