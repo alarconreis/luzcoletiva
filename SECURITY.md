@@ -81,7 +81,8 @@ Estado atual (atualizado em 2026-05-14):
 
 - Backup PostgreSQL automatizado às 04:00 BRT (GPG AES-256 + B2)
 - Rotação GFS: 7 daily, 4 weekly, 6 monthly
-- Alerta via Resend em caso de falha
+- Alerta via Resend em caso de falha (interno ao script)
+- Heartbeat externo via Healthchecks.io (detecta falha silenciosa do próprio script)
 - Audit log de ações administrativas
 
 ### Mensais
@@ -164,9 +165,17 @@ Estado atual (atualizado em 2026-05-14):
 **Lições aprendidas**:
 - Lógica de alerta dentro do próprio script é insuficiente — script morto não consegue alertar
 - Backup mensal e semanal também ficaram com gap (cron único quebrou todos os tipos)
-- Necessário monitor heartbeat externo (planejado, não-prioritário)
+- Necessário monitor heartbeat externo
 
-**Status**: RESOLVIDO em 2026-05-15 11:44 BRT
+**Ações de follow-up**:
+- Implementado heartbeat externo via Healthchecks.io em 2026-05-15
+- 3 endpoints: `/start`, `/ok`, `/fail`
+- Schedule cron `0 7 * * *` UTC (04:00 BRT) com grace period de 2 horas
+- Alertas via email (alarconreis@gmail.com)
+- Validado ponta a ponta (canal direto + script forçado a falhar)
+- Defesa em camadas: alerta interno (Resend) + alerta externo (Healthchecks)
+
+**Status**: RESOLVIDO em 2026-05-15 11:44 BRT — hardening adicional em 2026-05-15 15:47 BRT
 
 ---
 
