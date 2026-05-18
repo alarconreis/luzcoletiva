@@ -2,319 +2,143 @@
 
 > **Iluminando vidas juntos.**
 >
-> Plataforma de solidariedade que conecta pessoas que precisam de ajuda
-> com quem pode oferecer apoio. Cada interação ilumina uma vida —
-> literalmente e simbolicamente.
+> Plataforma de solidariedade que conecta pessoas que precisam de ajuda com quem pode oferecer apoio.
+
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Status](https://img.shields.io/badge/Status-Early%20stage-orange.svg)]()
+
+🌐 **Produção**: [luzcoletiva.com.br](https://luzcoletiva.com.br)
+📝 **Blog**: [Doação online sem golpe](https://luzcoletiva.com.br/blog/doacao-online-sem-golpe-luz-coletiva)
+🔒 **Política de segurança**: [SECURITY.md](./SECURITY.md)
 
 ---
 
-## ✨ Visão geral
+## ⚠️ Status do projeto
 
-Luz Coletiva é um MVP funcional construído como base sólida e modular,
-pronto para evoluir com novas funcionalidades (match, geolocalização,
-reputação, etc.).
+A Luz Coletiva está em **fase inicial**. O código está aberto para fins de:
 
-| Camada              | Tecnologia                          |
-| ------------------- | ----------------------------------- |
-| Frontend            | React 18 + Vite + TailwindCSS       |
-| Backend             | Python 3.12 + FastAPI               |
-| Tarefas assíncronas | Celery + Redis                      |
-| Banco de dados      | PostgreSQL 16                       |
-| Containerização     | Docker + Docker Compose             |
-| Autenticação        | JWT (HS256)                         |
-| Hash de senha       | bcrypt                              |
+- Transparência técnica com parceiros institucionais
+- Auditoria por profissionais de segurança
+- Aprendizado para quem quer construir tecnologia social com rigor
+
+Não há garantias de SLA, suporte ou estabilidade. Use por sua conta e risco se decidir fork/self-host.
+
+---
+
+## ✨ O que é
+
+Plataforma para conectar:
+
+- **Solicitantes**: pessoas que precisam de ajuda concreta (fraldas, cesta básica, materiais escolares, etc.)
+- **Ajudantes**: pessoas que querem doar bens ou recursos
+- **Parceiros institucionais**: ONGs, igrejas, CRAS, abrigos que cadastram pedidos em nome de pessoas vulneráveis sem acesso digital (atendimento assistido)
+
+**Diferenciais:**
+
+- Verificação de identidade real (RG + selfie + revisão humana)
+- Atendimento assistido (parceiros cadastram em nome de quem não tem smartphone)
+- Privacy by design (LGPD como fundação)
+- Auditável tecnicamente (este repositório)
+
+---
+
+## 🏗️ Stack
+
+| Camada | Tecnologia | Versão |
+|--------|-----------|--------|
+| Frontend | React + Vite + TailwindCSS | React 18 |
+| Servidor web | Caddy (TLS + reverse proxy) | 2.11.3 |
+| Backend | FastAPI + Uvicorn | 0.121 / Python 3.12 |
+| Tarefas assíncronas | Celery + Redis | 5.4 / 7.4 |
+| Banco de dados | PostgreSQL | 16.14 |
+| Containerização | Docker + Docker Compose | - |
+| Autenticação | JWT HS256 + TOTP 2FA pra admin | RFC 6238 |
+| Cifragem de documentos | AES-256-GCM (HKDF-SHA256) | - |
+| Email | Resend API | - |
+| Storage de backup | Backblaze B2 (S3-compatible) | - |
+| Analytics | Google Analytics 4 (com consent LGPD) | - |
+| CDN/Proxy | Cloudflare | - |
 
 ---
 
 ## 🎨 Identidade visual
 
-- **Cores**: `#FFD54F` (sol) · `#4FC3F7` (céu) · `#81C784` (verde) · `#424242` (cinza) · `#1565C0` (footer)
+- **Cores principais**: `#FFD54F` (sol) · `#4FC3F7` (céu) · `#81C784` (verde)
 - **Tipografia**: Poppins (títulos) + Open Sans (textos)
-- **Logo**: quatro pessoas interligadas formando um sol — símbolo da união e luz compartilhada
+- **Logo**: quatro pessoas interligadas formando um sol
 - **Slogan**: *"Iluminando vidas juntos."*
 
 ---
 
-## 📁 Estrutura
+## 🚀 Rodando localmente
 
-```
-luzcoletiva/
-├── backend/
-│   ├── app/
-│   │   ├── core/         → config, database, security, deps
-│   │   ├── models/       → User
-│   │   ├── schemas/      → Pydantic
-│   │   ├── routes/       → auth, profile, stories
-│   │   ├── tasks/        → Celery + email
-│   │   └── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/   → Logo, Header, Hero, Cards, Footer...
-│   │   ├── pages/        → Home, Login, Register, Dashboard
-│   │   ├── context/      → AuthContext (JWT)
-│   │   ├── services/     → api.js (axios)
-│   │   ├── App.jsx, main.jsx, index.css
-│   ├── public/favicon.svg
-│   ├── package.json, vite.config.js, tailwind.config.js
-│   ├── nginx.conf
-│   └── Dockerfile
-│
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
----
-
-## 🚀 Como rodar localmente
-
-### Pré-requisitos
-
-- Docker 24+ e Docker Compose v2
-- Porta `80` e `8000` livres
-
-### Passos
+⚠️ **Requer**: Docker + Docker Compose v2
 
 ```bash
-# 1. Clone e entre no diretório
-git clone <seu-repo> luzcoletiva
+git clone https://github.com/alarconreis/luzcoletiva.git
 cd luzcoletiva
 
-# 2. Copie o env de exemplo e edite os segredos
+# Configura .env com seus próprios valores
 cp .env.example .env
+# Edita .env (JWT_SECRET, POSTGRES_PASSWORD, RESEND_API_KEY, etc.)
 
-# Gere um JWT_SECRET forte:
-python3 -c "import secrets; print(secrets.token_urlsafe(64))"
-# cole o valor em JWT_SECRET no .env
-# também troque POSTGRES_PASSWORD
+# Sobe os containers
+docker compose up -d
 
-# 3. Suba todos os serviços
-docker compose up -d --build
-
-# 4. Acompanhe os logs (opcional)
-docker compose logs -f backend worker
+# Acessa em http://localhost:5173 (frontend)
+# API docs em http://localhost:8000/docs
 ```
 
-### Acessos
-
-| Serviço          | URL                            |
-| ---------------- | ------------------------------ |
-| Frontend         | http://localhost               |
-| API (direto)     | http://localhost:8000          |
-| Documentação API | http://localhost:8000/docs     |
-| Healthcheck      | http://localhost:8000/health   |
+Para desenvolvimento local sem Docker, veja [CLAUDE.md](./CLAUDE.md).
 
 ---
 
-## 🔌 Endpoints da API
+## 🔒 Segurança
 
-Todos os endpoints estão sob o prefixo `/api`.
+Veja [SECURITY.md](./SECURITY.md) para:
 
-| Método | Rota                   | Auth | Descrição                              |
-| ------ | ---------------------- | :--: | -------------------------------------- |
-| POST   | `/api/register`        |  —   | Cadastro + e-mail de boas-vindas async |
-| POST   | `/api/login`           |  —   | Retorna JWT                            |
-| GET    | `/api/profile`         |  ✅  | Dados do usuário autenticado           |
-| GET    | `/api/profile/history` |  ✅  | Histórico mock de interações           |
-| GET    | `/api/stories`         |  —   | Histórias inspiradoras (mock)          |
-| GET    | `/health`              |  —   | Healthcheck                            |
-
-### Exemplo: cadastro
-
-```bash
-curl -X POST http://localhost:8000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Ana Silva",
-    "email": "ana@exemplo.com",
-    "password": "senhaSegura123",
-    "profile_type": "helper"
-  }'
-```
-
-Resposta (`201 Created`):
-
-```json
-{
-  "access_token": "eyJhbGc...",
-  "token_type": "bearer",
-  "user": {
-    "id": 1,
-    "name": "Ana Silva",
-    "email": "ana@exemplo.com",
-    "profile_type": "helper",
-    "is_verified": false,
-    "created_at": "2026-05-01T19:30:00Z"
-  }
-}
-```
-
-### Exemplo: requisição autenticada
-
-```bash
-curl http://localhost:8000/api/profile \
-  -H "Authorization: Bearer SEU_TOKEN_AQUI"
-```
+- Política de reporte de vulnerabilidades
+- CVE Tracker (histórico de patches)
+- Defesas implementadas (auth, autz, dados, network)
+- Rotinas operacionais (backup, monitoramento)
+- Histórico de incidentes documentados com transparência
 
 ---
 
-## 🔐 Notas de segurança (MVP)
+## 🤝 Contribuindo
 
-Decisões já implementadas:
+Este é um projeto pessoal mantido por **Vinicius Reis** (gerente CSIRT) em horário livre.
 
-- ✅ **bcrypt** com custo padrão (12) para hash de senha
-- ✅ **JWT HS256** com `exp` e `iat`, segredo via env (nunca em código)
-- ✅ **Mensagem genérica** em login (`"Credenciais inválidas"`) — não vaza enumeração de e-mails
-- ✅ Auto-logout em `401` no interceptor do axios
-- ✅ Container do backend roda como **usuário não-root** (`appuser`)
-- ✅ Headers de segurança no nginx: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`
-- ✅ `task_time_limit=60s` no Celery — evita workers travados
-- ✅ Validação Pydantic em todas as entradas
+**Aceito contribuições** de:
 
-Antes de produção, recomenda-se ainda:
+- 🐛 Bug reports detalhados (via Issues)
+- 🔒 Reports de vulnerabilidade (via email — ver SECURITY.md)
+- 📝 Sugestões de melhoria
+- 🎨 Pull requests pequenas e bem documentadas
 
-- 🔲 **Rate limiting** em `/login` e `/register` (sugestão: `slowapi`)
-- 🔲 **HTTPS** via Nginx/Traefik com Let's Encrypt
-- 🔲 **Alembic** para migrations versionadas (substituir `create_all`)
-- 🔲 **Refresh tokens** + revogação (Redis allowlist)
-- 🔲 **CSP** (Content Security Policy) restrita no nginx
-- 🔲 Log de auditoria (logins, alterações de perfil)
-- 🔲 **Verificação de e-mail** real (token de confirmação)
-- 🔲 **2FA** opcional via TOTP
+**Não aceito ainda:**
+
+- Refatorações grandes sem discussão prévia
+- Mudanças de design / identidade visual
+- Features fora do escopo MVP
+
+Para discussões, abra uma Issue ou me chame no [LinkedIn](https://www.linkedin.com/in/reisvi).
 
 ---
 
-## 🧪 Desenvolvimento sem Docker
+## 📜 Licença
 
-### Backend
+Este projeto está sob **GNU Affero General Public License v3** ([AGPL v3](./LICENSE)).
 
-```bash
-cd backend
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+Resumindo: você pode usar, modificar e redistribuir, **mas** se rodar versão modificada em serviço público (SaaS), **DEVE liberar o código-fonte das suas modificações**.
 
-# Suba só o Postgres e Redis via Docker
-docker compose up -d db redis
-
-# Rode a API
-export DATABASE_URL="postgresql+psycopg2://luzcoletiva:luzcoletiva@localhost:5432/luzcoletiva"
-export JWT_SECRET="dev-secret-trocar"
-export REDIS_URL="redis://localhost:6379/0"
-export CELERY_BROKER_URL="redis://localhost:6379/0"
-uvicorn app.main:app --reload
-
-# Em outro terminal — worker do Celery
-celery -A app.tasks.celery_app.celery_app worker --loglevel=info
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# abre em http://localhost:5173
-```
+Escolhi AGPL v3 porque acredito que tecnologia social deve permanecer aberta e acessível à comunidade.
 
 ---
 
-## 🐳 Deploy em VPS Linux (Ubuntu 22.04+)
+## 📬 Contato
 
-### 1. Preparar o servidor
-
-```bash
-# Como root ou com sudo
-apt update && apt upgrade -y
-apt install -y docker.io docker-compose-plugin git ufw
-
-systemctl enable --now docker
-
-# Firewall básico
-ufw allow OpenSSH
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw enable
-```
-
-### 2. Clonar e configurar
-
-```bash
-git clone <seu-repo> /opt/luzcoletiva
-cd /opt/luzcoletiva
-cp .env.example .env
-
-# Edite com segredos REAIS de produção
-nano .env
-# - JWT_SECRET: gere com python -c "import secrets; print(secrets.token_urlsafe(64))"
-# - POSTGRES_PASSWORD: senha forte
-# - DEBUG=false
-# - CORS_ORIGINS=https://seu-dominio.com
-# - SMTP_*: provedor real (SES, Postmark, etc.)
-```
-
-### 3. Subir
-
-```bash
-docker compose up -d --build
-docker compose ps
-docker compose logs -f
-```
-
-### 4. Adicionar HTTPS (Caddy é o caminho mais simples)
-
-Crie `/opt/luzcoletiva/Caddyfile`:
-
-```
-seu-dominio.com {
-    reverse_proxy localhost:80
-}
-```
-
-Rode em outro container ou instale Caddy direto na VPS — ele cuida do
-Let's Encrypt automaticamente.
-
-### 5. Backup
-
-```bash
-# Backup do Postgres (automatize com cron)
-docker exec luz-db pg_dump -U luzcoletiva luzcoletiva | gzip > backup-$(date +%F).sql.gz
-```
-
----
-
-## 🗺️ Roadmap pós-MVP
-
-- [ ] Sistema de match entre solicitação e oferta
-- [ ] Geolocalização (PostGIS) para encontros próximos
-- [ ] Sistema de reputação e feedback
-- [ ] Chat seguro entre usuários
-- [ ] Notificações push (web + e-mail)
-- [ ] Painel administrativo + moderação
-- [ ] Verificação de identidade opcional
-- [ ] App mobile (React Native)
-
----
-
-## 👥 Contribuindo
-
-Esse projeto cresce com gente. Pull requests, issues e ideias são bem-vindos.
-
-Antes de abrir PR:
-
-1. Rode `docker compose up --build` e confirme que tudo sobe
-2. Não commitar `.env` nem segredos
-3. Mantenha o estilo das classes Tailwind e a paleta da marca
-
----
-
-## 📄 Licença
-
-A definir pela equipe Luz Coletiva.
-
----
-
-**Feito com ☀️ pela comunidade — porque ninguém ilumina sozinho.**
+- **Email**: alarconreis@gmail.com
+- **LinkedIn**: [linkedin.com/in/reisvi](https://www.linkedin.com/in/reisvi)
+- **Site**: [luzcoletiva.com.br](https://luzcoletiva.com.br)
+- **Vulnerabilidades**: ver [SECURITY.md](./SECURITY.md)
