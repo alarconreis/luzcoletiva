@@ -11,7 +11,7 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "America/Sao_Paulo"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     reviewers:
       - "alarconreis"
     labels:
@@ -20,17 +20,11 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    # Agrupa atualizações pra reduzir ruído
-    groups:
-      python-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+
   # ===== Frontend npm =====
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -39,7 +33,7 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "America/Sao_Paulo"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     reviewers:
       - "alarconreis"
     labels:
@@ -48,17 +42,12 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    groups:
-      npm-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
-  # ===== Docker base images =====
+
+  # ===== Docker base images (backend) =====
   - package-ecosystem: "docker"
     directory: "/backend"
     schedule:
@@ -74,11 +63,12 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(docker)"
-
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+
+  # ===== Docker base images (frontend) =====
   - package-ecosystem: "docker"
     directory: "/frontend"
     schedule:
@@ -94,12 +84,12 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(docker)"
-
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
-  # ===== GitHub Actions (se vier a usar) =====
+
+  # ===== GitHub Actions =====
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
