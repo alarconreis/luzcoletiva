@@ -27,6 +27,10 @@ updates:
           - "minor"
           - "patch"
 
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
   # ===== Frontend npm =====
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -50,6 +54,10 @@ updates:
           - "minor"
           - "patch"
 
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
   # ===== Docker base images =====
   - package-ecosystem: "docker"
     directory: "/backend"
@@ -67,6 +75,10 @@ updates:
     commit-message:
       prefix: "chore(docker)"
 
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
   - package-ecosystem: "docker"
     directory: "/frontend"
     schedule:
@@ -83,6 +95,10 @@ updates:
     commit-message:
       prefix: "chore(docker)"
 
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
   # ===== GitHub Actions (se vier a usar) =====
   - package-ecosystem: "github-actions"
     directory: "/"
