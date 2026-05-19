@@ -146,6 +146,50 @@ Estado atual (atualizado em 2026-05-14):
 
 ---
 
+## Riscos aceitos (Risk Acceptance)
+
+Decisões documentadas em que vulnerabilidades conhecidas foram analisadas e o risco residual foi aceito, com justificativa técnica.
+
+### 2026-05-18 — esbuild 0.21.5 (CVE-2026-39365)
+
+**Vulnerabilidade**: esbuild < 0.25.0 permite que qualquer site mande requisições ao dev-server e leia respostas (origin validation error).
+
+**Severidade**: Moderate (CVSS 5.3)
+
+**Análise**:
+- esbuild é dependência transitiva do Vite 5.x
+- A vulnerabilidade afeta apenas o **dev-server** (`npm run dev`)
+- Produção usa Dockerfile multi-stage:
+  - Stage 1 (build): node:20 + vite/esbuild roda 1x pra gerar `/dist`
+  - Stage 2 (runtime): caddy:2-alpine serve `/dist` estático
+- Imagem final em produção **não contém** node, vite ou esbuild
+- Superfície de ataque em produção: zero
+
+**Decisão**: aceitar risco residual em desenvolvimento.
+
+**Mitigações**:
+- Dev-server local (Vinicius) bind em 127.0.0.1 quando possível
+- Avaliação de upgrade pra Vite 6+ adiada (breaking changes em @vitejs/plugin-react)
+
+**Reavaliação**: próxima janela de patching mensal ou se nova CVE escalar severity.
+
+### 2026-05-18 — Vite 5.4.21 (CVE-2026-39365 — falso positivo)
+
+**Sintoma**: Dependabot abriu PR #13 propondo Vite ^5.4.8 → ^8.0.13.
+
+**Análise**:
+- Affected versions oficiais: <= 6.4.1
+- `package.json` declara `vite ^5.4.8` (range semver)
+- `package-lock.json` instala **5.4.21** (última patch da série 5.x)
+- Vite 5.x **não está** no range vulnerável
+- Dependabot reporta o alerta porque lê apenas `package.json` (constraint) sem consultar lockfile
+
+**Decisão**: nenhuma ação técnica necessária. Vite 5.4.21 já é segura.
+
+PR #13 fechada por análise técnica. Alert no GitHub dismissado como "Risk tolerable".
+
+---
+
 ## Histórico de incidentes
 
 ### 2026-05-15 — Falha silenciosa de backup automatizado
@@ -181,4 +225,4 @@ Estado atual (atualizado em 2026-05-14):
 ---
 
 Política mantida por: Vinicius Reis (alarconreis@gmail.com) - Gerente CSIRT
-Última revisão: 2026-05-15
+Última revisão: 2026-05-18
