@@ -146,6 +146,38 @@ Estado atual (atualizado em 2026-05-14):
 
 ---
 
+## CI/CD em ação (defesa em camadas)
+
+Casos onde o GitHub Actions CI capturou problemas **antes** do merge em main, evitando incidentes em produção. Esta seção documenta o valor concreto do pipeline.
+
+### 2026-05-19 — Starlette 0.49.1 → 0.52.1 (PR #27)
+
+**Cenário**: Dependabot abriu PR pra atualizar Starlette de 0.49.1 → 0.52.1.
+
+**Detecção pelo CI**: backend job falhou no comando `pip install -r requirements.txt` com o seguinte erro:
+
+```
+ERROR: Cannot install -r requirements.txt and starlette==0.52.1 because 
+these package versions have conflicting dependencies.
+
+The conflict is caused by:
+  The user requested starlette==0.52.1
+  fastapi 0.121.0 depends on starlette<0.50.0 and >=0.40.0
+```
+
+**Análise**:
+- Dependabot avalia pacotes em isolamento, ignora constraints transitivos
+- FastAPI 0.121 fixa Starlette < 0.50 nas próprias constraints
+- Upgrade isolado de Starlette é fisicamente impossível sem bump do FastAPI
+
+**Decisão**: PR #27 fechada. Starlette só será atualizado quando o FastAPI release uma versão que relaxe a constraint.
+
+**Valor demonstrado**:
+- Sem CI: merge poderia ter passado, falhado no build em produção, gerado downtime até revert
+- Com CI: detecção em ~60 segundos, custo zero, decisão informada antes de qualquer impacto
+
+---
+
 ## Riscos aceitos (Risk Acceptance)
 
 Decisões documentadas em que vulnerabilidades conhecidas foram analisadas e o risco residual foi aceito, com justificativa técnica.
@@ -225,4 +257,4 @@ PR #13 fechada por análise técnica. Alert no GitHub dismissado como "Risk tole
 ---
 
 Política mantida por: Vinicius Reis (alarconreis@gmail.com) - Gerente CSIRT
-Última revisão: 2026-05-18
+Última revisão: 2026-05-19
