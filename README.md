@@ -4,6 +4,7 @@
 >
 > Plataforma de solidariedade que conecta pessoas que precisam de ajuda com quem pode oferecer apoio.
 
+[![CI](https://github.com/alarconreis/luzcoletiva/actions/workflows/ci.yml/badge.svg)](https://github.com/alarconreis/luzcoletiva/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Status](https://img.shields.io/badge/Status-Early%20stage-orange.svg)]()
 
