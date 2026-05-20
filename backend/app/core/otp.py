@@ -1,5 +1,5 @@
 """
-OTP generation, verification (Redis-backed) and SMS delivery (ClickSend).
+OTP generation, verification (Redis-backed) and delivery via email (Resend).
 """
 import logging
 import random
@@ -7,7 +7,6 @@ import uuid
 from datetime import timedelta
 
 import redis as redis_lib
-import requests
 
 from app.core.config import settings
 
@@ -15,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 _redis = redis_lib.from_url(settings.REDIS_URL, decode_responses=True)
 OTP_TTL = 600  # 10 minutes
-
-_CLICKSEND_URL = "https://rest.clicksend.com/v3/sms/send"
 
 
 # ============================================
@@ -108,27 +105,25 @@ def verify_otp(otp_token: str, code: str) -> int | None:
     return int(stored_user_id)
 
 
-def send_otp_sms(phone: str, code: str) -> None:
-    """Sends via ClickSend if configured, otherwise logs for dev."""
-    if not (settings.CLICKSEND_USERNAME and settings.CLICKSEND_API_KEY):
-        logger.info("[DEV OTP] phone=%s code=%s", phone, code)
+def send_otp_email(email: str, code: str) -> None:
+    """Sends OTP code via email (Resend). Logs for dev if Resend not configured."""
+    from app.core.email import send_email
+
+    if not settings.RESEND_API_KEY:
+        logger.info("[DEV OTP] email=%s code=%s", email, code)
         return
 
-    resp = requests.post(
-        _CLICKSEND_URL,
-        auth=(settings.CLICKSEND_USERNAME, settings.CLICKSEND_API_KEY),
-        json={
-            "messages": [
-                {
-                    "to": phone,
-                    "body": f"Seu código Luz Coletiva: {code}. Válido por 10 minutos.",
-                    "source": "LuzColetiva",
-                }
-            ]
-        },
-        timeout=10,
+    html = (
+        f"<p>Seu código de acesso à Luz Coletiva é:</p>"
+        f"<p style=\"font-size:28px;font-weight:bold;letter-spacing:4px;\">{code}</p>"
+        f"<p>Válido por 10 minutos. Se você não tentou entrar, ignore este e-mail.</p>"
     )
-    resp.raise_for_status()
-    data = resp.json()
-    if data.get("response_code") != "SUCCESS":
-        raise RuntimeError(f"ClickSend error: {data.get('response_code')}")
+    text = f"Seu código de acesso à Luz Coletiva: {code}. Válido por 10 minutos."
+
+    send_email(
+        to=email,
+        subject="Seu código de acesso — Luz Coletiva",
+        html=html,
+        text=text,
+        template="otp_login",
+    )

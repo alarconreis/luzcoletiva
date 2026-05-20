@@ -68,6 +68,20 @@ def _log_login(db: Session, email: str, success: bool, user_id, ip: str) -> None
 router = APIRouter(prefix="/api", tags=["auth"])
 
 
+def _mask_email(email: str) -> str:
+    """Mascara email pra hint: vinicius@gmail.com -> vi****@gmail.com"""
+    try:
+        local, domain = email.split("@", 1)
+        if len(local) <= 2:
+            masked = local[0] + "*"
+        else:
+            masked = local[:2] + "*" * max(2, len(local) - 2)
+        return f"{masked}@{domain}"
+    except Exception:  # noqa: BLE001
+        return "***"
+
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("3/hour")
 async def register(
@@ -188,7 +202,7 @@ def login(request: Request, response: Response, payload: UserLogin, db: Session 
         }
 
     if user.phone:
-        from app.core.otp import generate_otp, send_otp_sms, check_otp_cap, OtpCapExceeded
+        from app.core.otp import generate_otp, send_otp_email, check_otp_cap, OtpCapExceeded
         try:
             check_otp_cap(user.id, ip=ip)
         except OtpCapExceeded as e:
@@ -200,10 +214,10 @@ def login(request: Request, response: Response, payload: UserLogin, db: Session 
             )
         otp_token, code = generate_otp(user.id)
         try:
-            send_otp_sms(user.phone, code)
+            send_otp_email(user.email, code)
         except Exception:  # noqa: BLE001
             pass
-        return OTPLoginResponse(otp_token=otp_token, phone_hint=user.phone[-4:])
+        return OTPLoginResponse(otp_token=otp_token, phone_hint=_mask_email(user.email))
 
     token = create_access_token(user.id, extra={"type": user.profile_type.value})
     _set_session_cookie(response, token)

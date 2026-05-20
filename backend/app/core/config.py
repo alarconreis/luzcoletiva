@@ -39,9 +39,6 @@ class Settings(BaseSettings):
     SMTP_FROM: str = os.getenv("SMTP_FROM", "no-reply@luzcoletiva.com.br")
     ALERT_EMAIL: str = os.getenv("ALERT_EMAIL", "contato@luzcoletiva.com.br")
 
-    # ClickSend (SMS OTP)
-    CLICKSEND_USERNAME: str = os.getenv("CLICKSEND_USERNAME", "")
-    CLICKSEND_API_KEY: str = os.getenv("CLICKSEND_API_KEY", "")
 
     # CORS
     CORS_ORIGINS: str = os.getenv(

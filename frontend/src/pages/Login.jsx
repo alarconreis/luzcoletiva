@@ -66,7 +66,7 @@ export default function Login() {
   };
   const subtitles = {
     password: 'Sua luz faz falta por aqui ✨',
-    otp: `Enviamos um código SMS para o número terminado em ${otp.phoneHint}`,
+    otp: `Enviamos um código para o e-mail ${otp.phoneHint}`,
     totp: totp.isBackup
       ? 'Digite um dos seus backup codes (formato XXXX-XXXX)'
       : 'Digite o código de 6 dígitos do seu app autenticador',
