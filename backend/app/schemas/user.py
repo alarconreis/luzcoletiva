@@ -80,15 +80,6 @@ class UserRegister(BaseModel):
     def validate_password(cls, v: str) -> str:
         return _validate_password_strength(v)
 
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v: str) -> str:
-        digits = re.sub(r"\D", "", v)
-        if digits.startswith("55") and len(digits) > 11:
-            digits = digits[2:]
-        if len(digits) not in (10, 11):
-            raise ValueError("Número de telefone inválido (DDD + número)")
-        return f"+55{digits}"
 
     @field_validator("cpf")
     @classmethod
@@ -127,13 +118,30 @@ class UserRegister(BaseModel):
     @field_validator("phone", mode="before")
     @classmethod
     def _normalize_phone(cls, v):
-        """Normaliza phone: só dígitos. Permite vazio/None."""
+        """Normaliza telefone BR para E.164 (+55DDNNNNNNNNN).
+
+        Aceita formatos com/sem +55, com/sem formatação (parênteses, traços,
+        espaços). Valida DDD (11-99) e tamanho (fixo 10 ou celular 11 dígitos).
+        """
         if v is None or v == "":
-            return v
-        digits = "".join(c for c in str(v) if c.isdigit())
-        if len(digits) < 10 or len(digits) > 15:
-            raise ValueError("Telefone deve ter entre 10 e 15 dígitos (com DDD)")
-        return digits
+            raise ValueError("Telefone é obrigatório")
+        # Extrai só dígitos
+        digits = re.sub(r"\D", "", str(v))
+        # Remove código do país se presente
+        if digits.startswith("55") and len(digits) > 11:
+            digits = digits[2:]
+        # Valida tamanho (10 = fixo com DDD, 11 = celular com DDD + 9)
+        if len(digits) not in (10, 11):
+            raise ValueError("Telefone inválido. Use DDD + número (ex: 11 99999-8888)")
+        # Valida DDD brasileiro (11 a 99)
+        ddd = int(digits[:2])
+        if ddd < 11 or ddd > 99:
+            raise ValueError("DDD inválido")
+        # Celular: 3º dígito deve ser 9
+        if len(digits) == 11 and digits[2] != "9":
+            raise ValueError("Celular deve ter o 9 após o DDD")
+        return f"+55{digits}"
+
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
