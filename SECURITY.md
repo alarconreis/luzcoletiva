@@ -109,7 +109,7 @@ Estado atual (atualizado em 2026-05-14):
 - Cookie session HttpOnly + SameSite strict + Secure
 - TOTP 2FA obrigatório para admin
 - 10 backup codes bcrypt-hashados, one-time use
-- SMS OTP via ClickSend (usuários comuns)
+- Email OTP via Resend (fallback 2FA para usuários sem TOTP)
 - Rate limiting OTP: 5/24h user, 3/h user, 20/h IP
 - bcrypt cost 12
 
@@ -175,6 +175,31 @@ The conflict is caused by:
 **Valor demonstrado**:
 - Sem CI: merge poderia ter passado, falhado no build em produção, gerado downtime até revert
 - Com CI: detecção em ~60 segundos, custo zero, decisão informada antes de qualquer impacto
+
+---
+
+## Decisões de arquitetura de segurança
+
+### 2026-05-20 — Remoção de SMS OTP, migração para Email OTP
+
+**Contexto**: SMS OTP (via ClickSend) era usado como 2FA de fallback para usuários sem TOTP configurado. Custava mínimo de US$ 20 em créditos e dependia de fornecedor externo.
+
+**Análise de risco**:
+- A verificação de identidade da plataforma é feita via documento (RG) + selfie + revisão humana — camada forte de anti-fraude.
+- O SMS OTP verificava posse temporária de um aparelho, não identidade. Para fins anti-fraude, é redundante com a verificação documental já existente.
+- O telefone deixa de ser verificado por SMS, mas permanece no cadastro como dado de contato (não é canal crítico). Validação de formato (regex BR) garante plausibilidade.
+- O 2FA de login **não foi removido** — foi substituído por Email OTP (via Resend, já presente no stack, sem custo adicional). Mantém o segundo fator para usuários sem TOTP.
+
+**Decisão**: remover ClickSend/SMS, migrar OTP de login para email.
+
+**Benefícios**:
+- Elimina custo recorrente e dependência de fornecedor (menor superfície de terceiros)
+- Mantém 2FA equivalente para usuários sem TOTP
+- Consolida comunicação num único provedor (Resend), já monitorado via email_log
+
+**Validação**: fluxo testado end-to-end (geração, envio, verificação, anti-replay single-use, rejeição de código incorreto). Email registrado em email_log com success=true.
+
+**Evolução futura**: tornar TOTP obrigatório para todos os perfis quando a base crescer, aposentando o Email OTP de fallback.
 
 ---
 
@@ -257,4 +282,4 @@ PR #13 fechada por análise técnica. Alert no GitHub dismissado como "Risk tole
 ---
 
 Política mantida por: Vinicius Reis (alarconreis@gmail.com) - Gerente CSIRT
-Última revisão: 2026-05-19
+Última revisão: 2026-05-20
