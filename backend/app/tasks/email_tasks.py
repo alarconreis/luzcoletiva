@@ -105,6 +105,15 @@ def send_admin_verify_pending(self, to: str, count: int):
         _retry_strategy(self, e)
 
 
+@celery_app.task(bind=True, max_retries=3, name="tasks.send_admin_new_signup")
+def send_admin_new_signup(self, to: str, name: str, profile_type: str):
+    try:
+        subject, html, text = T.admin_new_signup(name, profile_type)
+        return send_email(to, subject, html, text, template="admin_new_signup")
+    except Exception as e:
+        _retry_strategy(self, e)
+
+
 @celery_app.task(bind=True, max_retries=3, name="tasks.send_admin_backup_failed")
 def send_admin_backup_failed(self, to: str, error_excerpt: str):
     try:

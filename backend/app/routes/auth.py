@@ -22,7 +22,7 @@ from app.schemas.user import (
     LoginResponse, OTPLoginResponse, OTPVerify, PasswordResetConfirm,
     PasswordResetRequest, UserLogin, UserOut, UserRegister,
 )
-from app.tasks.email_tasks import send_confirmation_email, send_password_reset
+from app.tasks.email_tasks import send_confirmation_email, send_password_reset, send_admin_new_signup
 
 
 def _set_session_cookie(response: Response, token: str) -> None:
@@ -163,6 +163,12 @@ async def register(
 
     try:
         send_confirmation_email.delay(user.email, user.name)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Alerta admin de novo cadastro (não bloqueia o fluxo se falhar)
+    try:
+        send_admin_new_signup.delay(settings.ALERT_EMAIL, user.name, user.profile_type.value)
     except Exception:  # noqa: BLE001
         pass
 

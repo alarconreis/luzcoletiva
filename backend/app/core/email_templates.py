@@ -178,6 +178,18 @@ def admin_verify_pending(count: int) -> tuple[str, str, str]:
     return subject, html, text
 
 
+def admin_new_signup(name: str, profile_type: str) -> tuple[str, str, str]:
+    tipo_label = {"helper": "Ajudante", "requester": "Solicitante"}.get(profile_type, profile_type)
+    subject = f"[ADMIN] Novo cadastro: {name} ({tipo_label})"
+    html = _wrap(f"""
+        <h1 style="font-size:22px;color:#212121;margin:0 0 16px 0;">Novo cadastro recebido</h1>
+        <p style="font-size:16px;line-height:1.6;color:#616161;"><strong>{name}</strong> acabou de se cadastrar como <strong>{tipo_label}</strong> e aguarda revisão.</p>
+        {_btn("Revisar no painel", settings.APP_BASE_URL + "/admin", "#1565C0", "#fff")}
+    """, preheader=f"Novo cadastro: {name}")
+    text = f"Novo cadastro: {name} ({tipo_label}). Revise em {settings.APP_BASE_URL}/admin"
+    return subject, html, text
+
+
 def password_reset(name: str, reset_url: str) -> tuple[str, str, str]:
     first = name.split()[0]
     subject = "Redefinição de senha — Luz Coletiva"
