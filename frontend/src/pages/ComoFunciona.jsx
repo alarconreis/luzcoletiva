@@ -152,7 +152,7 @@ function RequesterTrack() {
         title="Três passos pra encontrar quem pode ajudar"
         steps={[
           { icon: UserPlus, title: '1. Cadastre-se como solicitante', text: 'Crie sua conta e faça a verificação de identidade. É rápido e protege todo mundo.' },
-          { icon: HelpingHand, title: '2. Crie um pedido', text: 'Conte o que você precisa: cursos, exames, equipamentos ou livros. Adicione uma descrição clara e sua cidade.' },
+          { icon: HelpingHand, title: '2. Crie um pedido', text: 'Conte o que você precisa: livros, material escolar, instrumentos musicais, roupas e calçados, itens de bebê ou ração para pets. Adicione uma descrição clara e sua cidade.' },
           { icon: MessageCircle, title: '3. Receba ofertas e converse', text: 'Quando alguém se oferecer, você verá o nome e a mensagem. Aceite, recuse ou converse pelo chat antes de decidir.' },
         ]}
       />

@@ -28,8 +28,9 @@ export default function Termos() {
         <p>
           A Luz Coletiva é uma plataforma que conecta pessoas que precisam de ajuda
           (solicitantes) com pessoas dispostas a oferecer ajuda (ajudantes), com foco em
-          itens essenciais para educação e qualidade de vida (livros, cursos, exames,
-          equipamentos). A plataforma é gratuita.
+          itens essenciais para educação e qualidade de vida (livros, material escolar,
+          instrumentos musicais, roupas e calçados, itens de bebê, ração para pets).
+          A plataforma é gratuita.
         </p>
 
         <h2 className="font-display font-bold text-xl text-ink-900 mt-8">2. Cadastro e elegibilidade</h2>
