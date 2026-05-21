@@ -13,7 +13,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class HelpRequestCreate(BaseModel):
     title: str = Field(min_length=5, max_length=120)
     description: str = Field(min_length=10, max_length=2000)
-    category: Literal["cursos", "exames", "equipamentos", "livros"]
+    category: Literal[
+        "livros",
+        "material_escolar",
+        "instrumentos_musicais",
+        "roupas_calcados",
+        "itens_bebe",
+        "racao_pets",
+    ]
     city: str = Field(min_length=2, max_length=80)
     state: str = Field(min_length=2, max_length=2)
 

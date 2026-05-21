@@ -28,6 +28,7 @@ class HelpCategory(str, enum.Enum):
     instrumentos_musicais = "instrumentos_musicais"
     roupas_calcados = "roupas_calcados"
     itens_bebe = "itens_bebe"
+    racao_pets = "racao_pets"
 
 
 

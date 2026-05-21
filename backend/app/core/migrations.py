@@ -35,7 +35,7 @@ def run_migrations() -> None:
                 IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'helpcategory') THEN
                     CREATE TYPE helpcategory AS ENUM (
                         'livros', 'material_escolar', 'instrumentos_musicais',
-                        'roupas_calcados', 'itens_bebe'
+                        'roupas_calcados', 'itens_bebe', 'racao_pets'
                     );
                 END IF;
             END$$;
@@ -44,14 +44,8 @@ def run_migrations() -> None:
         conn.execute(text("""
             DO $$ BEGIN
                 IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'helpcategory') THEN
-                    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = 'helpcategory'::regtype AND enumlabel = 'cursos') THEN
-                        ALTER TYPE helpcategory ADD VALUE 'cursos';
-                    END IF;
-                    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = 'helpcategory'::regtype AND enumlabel = 'exames') THEN
-                        ALTER TYPE helpcategory ADD VALUE 'exames';
-                    END IF;
-                    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = 'helpcategory'::regtype AND enumlabel = 'equipamentos') THEN
-                        ALTER TYPE helpcategory ADD VALUE 'equipamentos';
+                    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = 'helpcategory'::regtype AND enumlabel = 'racao_pets') THEN
+                        ALTER TYPE helpcategory ADD VALUE 'racao_pets';
                     END IF;
                 END IF;
             END$$;

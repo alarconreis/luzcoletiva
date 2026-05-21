@@ -29,6 +29,12 @@ export const CATEGORIES = [
     placeholder: 'Ex: Pacote de fralda Pampers tamanho M (40+ unidades) ou similar',
     titlePlaceholder: 'Ex: Fralda descartável tamanho M',
   },
+  {
+    value: 'racao_pets',
+    label: 'Ração para pets',
+    placeholder: 'Ex: Ração Premier para cão adulto porte médio, 15kg, ou similar',
+    titlePlaceholder: 'Ex: Ração para cão adulto 15kg',
+  },
 ];
 
 export const CATEGORY_LABEL = Object.fromEntries(
