@@ -178,6 +178,21 @@ The conflict is caused by:
 
 ---
 
+### 2026-05-21 — CodeQL (GitHub Code Scanning) ativado — 6 alerts triados
+
+Ativado o GitHub Code Scanning (CodeQL) no repositório. Primeira varredura gerou 6 alerts, triados com análise de contexto:
+
+**Corrigido (1 issue real, 2 alerts):**
+- Workflow CI sem `permissions` explícitas (alerts #1, #2 — Medium). Aplicado princípio do menor privilégio: `permissions: contents: read`. O CI só faz build, então read-only basta.
+
+**Dispensados como falso positivo (4 alerts):**
+- `blog.py` — "uncontrolled data in path expression" (#3, #4 — High). O filename é sanitizado antes do uso: rejeita separadores e navegação de path (`PurePosixPath(filename).name == filename`), exige correspondência no banco e valida `is_file()`. Defesa em camadas que o CodeQL não consegue provar estaticamente.
+- `VerifyIdentity.jsx` — "DOM text reinterpreted as HTML" (#5, #6 — High). Os previews vêm de `URL.createObjectURL()` sobre arquivo selecionado pelo próprio usuário, usados em `<img src>` (não em `innerHTML`/`dangerouslySetInnerHTML`). Sem reinterpretação de texto como HTML nem vetor de XSS.
+
+**Aprendizado**: SAST é conservador por design (prefere falso positivo a falso negativo). A triagem com conhecimento do contexto é parte essencial do processo — nem todo alerta é vulnerabilidade. As correções e dispensas ficam registradas no painel de Code Scanning com justificativa técnica.
+
+---
+
 ## Decisões de arquitetura de segurança
 
 ### 2026-05-20 — Remoção de SMS OTP, migração para Email OTP
@@ -282,4 +297,4 @@ PR #13 fechada por análise técnica. Alert no GitHub dismissado como "Risk tole
 ---
 
 Política mantida por: Vinicius Reis (alarconreis@gmail.com) - Gerente CSIRT
-Última revisão: 2026-05-20
+Última revisão: 2026-05-21
