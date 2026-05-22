@@ -18,6 +18,7 @@ import Faq from './pages/Faq.jsx';
 import Blog from './pages/Blog.jsx';
 import BlogPost from './pages/BlogPost.jsx';
 import ComoFunciona from './pages/ComoFunciona.jsx';
+import Calculadora from './pages/Calculadora.jsx';
 import Privacidade from './pages/Privacidade.jsx';
 import Termos from './pages/Termos.jsx';
 import CookieBanner from './components/CookieBanner.jsx';
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/help-requests/:id" element={<ProtectedRoute><HelpRequestDetail /></ProtectedRoute>} />
           <Route path="/verify-identity" element={<ProtectedRoute><VerifyIdentity /></ProtectedRoute>} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/calculadora" element={<Calculadora />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />

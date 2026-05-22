@@ -40,6 +40,9 @@ export default function Header() {
           <Link to="/como-funciona" className="btn-ghost text-ink-700">
             Como funciona
           </Link>
+          <Link to="/calculadora" className="btn-ghost text-ink-700">
+            Calculadora
+          </Link>
           <Link to="/faq" className="btn-ghost text-ink-700">
             FAQ
           </Link>
@@ -119,6 +122,9 @@ export default function Header() {
             <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
               <Link to="/como-funciona" className="btn-ghost justify-start text-ink-700">
                 Como funciona
+              </Link>
+              <Link to="/calculadora" className="btn-ghost justify-start text-ink-700">
+                Calculadora
               </Link>
               <Link to="/faq" className="btn-ghost justify-start text-ink-700">
                 FAQ
