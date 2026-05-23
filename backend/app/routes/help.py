@@ -195,7 +195,7 @@ async def create_request(
     category: HelpCategory = Form(...),
     city: str = Form(..., min_length=2, max_length=80),
     state: str = Form(..., min_length=2, max_length=2),
-    value: float = Form(..., ge=50.0, le=300.0, description="Valor solicitado em reais (R$ 50–300)"),
+    value: float = Form(..., ge=50.0, le=500.0, description="Valor solicitado em reais (R$ 50–500)"),
     document: Optional[UploadFile] = File(None, description="Comprovante, orçamento ou outro documento (opcional). Pode anexar foto do item desejado, orçamento de loja, ou prova de necessidade."),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),

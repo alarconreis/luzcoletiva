@@ -30,11 +30,11 @@ const FAQS = [
   },
   {
     q: 'Quem aprova os pedidos?',
-    a: 'Moderadores humanos da Luz Coletiva. Eles verificam se o pedido está dentro das regras (valor entre R$ 50 e R$ 300, descrição clara, item permitido, requester com identidade verificada). Aprovações normalmente saem em 24-48h.',
+    a: 'Moderadores humanos da Luz Coletiva. Eles verificam se o pedido está dentro das regras (valor entre R$ 50 e R$ 500, descrição clara, item permitido, requester com identidade verificada). Aprovações normalmente saem em 24-48h.',
   },
   {
     q: 'Quanto posso pedir?',
-    a: 'Entre R$ 50 e R$ 300 por pedido. Esse limite existe pra manter a plataforma focada em ajudas pequenas e diretas, e pra evitar fraudes de alto valor. Se você precisa de algo maior, recomendamos plataformas de crowdfunding tradicionais.',
+    a: 'Entre R$ 50 e R$ 500 por pedido. Esse limite existe pra manter a plataforma focada em ajudas pequenas e diretas, e pra evitar fraudes de alto valor. Se você precisa de algo maior, recomendamos plataformas de crowdfunding tradicionais.',
   },
   {
     q: 'Quem paga o frete?',

@@ -67,7 +67,7 @@ class HelpRequest(Base):
     state = Column(String(2), nullable=False)
     status = Column(Enum(HelpRequestStatus), nullable=False, default=HelpRequestStatus.open, index=True)
     accepted_offer_id = Column(Integer, ForeignKey("help_offers.id", ondelete="SET NULL"), nullable=True)
-    value = Column(Numeric(8, 2), nullable=True)  # valor solicitado em BRL (R$ 50–300)
+    value = Column(Numeric(8, 2), nullable=True)  # valor solicitado em BRL (R$ 50–500)
     document_path = Column(String(255), nullable=True)  # prova de necessidade obrigatória no cadastro
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     # Logística pós-aceite (Fase 2)

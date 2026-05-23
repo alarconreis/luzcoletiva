@@ -448,8 +448,8 @@ export default function AssistedTab() {
                 <textarea placeholder="Descrição do pedido" rows={4} className="input-field resize-none"
                   value={rDesc} onChange={e => setRDesc(e.target.value)} required minLength={10} maxLength={2000} />
                 <div>
-                  <label className="block text-sm font-display font-medium text-ink-900 mb-1">Valor (R$ 50–300)</label>
-                  <input type="number" min={50} max={300} step={1} className="input-field"
+                  <label className="block text-sm font-display font-medium text-ink-900 mb-1">Valor (R$ 50–500)</label>
+                  <input type="number" min={50} max={500} step={1} className="input-field"
                     value={rValue} onChange={e => setRValue(e.target.value)} required />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">

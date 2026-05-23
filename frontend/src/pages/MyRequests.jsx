@@ -49,8 +49,8 @@ export default function MyRequests() {
   const submit = async (e) => {
     e.preventDefault();
     const val = parseFloat(form.value);
-    if (!form.value || isNaN(val) || val < 50 || val > 300) {
-      setError('O valor deve ser entre R$ 50,00 e R$ 300,00.');
+    if (!form.value || isNaN(val) || val < 50 || val > 500) {
+      setError('O valor deve ser entre R$ 50,00 e R$ 500,00.');
       return;
     }
     setError('');
@@ -163,14 +163,14 @@ export default function MyRequests() {
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 font-medium text-sm">R$</span>
                 <input
-                  type="number" required min={50} max={300} step="0.01"
+                  type="number" required min={50} max={500} step="0.01"
                   className="input-field pl-10"
                   placeholder="Ex: 150,00"
                   value={form.value}
                   onChange={(e) => setForm({ ...form, value: e.target.value })}
                 />
               </div>
-              <p className="text-xs text-ink-400 mt-1">Valor mínimo R$ 50,00 · máximo R$ 300,00.</p>
+              <p className="text-xs text-ink-400 mt-1">Valor mínimo R$ 50,00 · máximo R$ 500,00.</p>
             </div>
 
             {/* Upload de documento obrigatório */}
