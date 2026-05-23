@@ -53,11 +53,11 @@ export default function Calculadora() {
               <span className="font-display font-medium text-sm text-ink-900">Calculadora de Impacto</span>
             </div>
             <h1 className="font-display font-bold text-4xl md:text-5xl text-ink-900 leading-[1.08]">
-              Quanto vale ajudar <em className="not-italic text-sky-900">de verdade?</em>
+              Quanto custa ajudar <em className="not-italic text-sky-900">de verdade?</em>
             </h1>
             <p className="mt-5 font-body text-lg text-ink-700 max-w-xl mx-auto leading-relaxed">
-              Itens parados na sua casa podem transformar a vida de uma família.
-              Faça as contas e veja o impacto.
+              Ajudar uma família pode custar menos do que você imagina.
+              Faça as contas e veja.
             </p>
           </div>
 
@@ -69,7 +69,7 @@ export default function Calculadora() {
                 modo === 'doar' ? 'bg-sunrise text-ink-900 shadow-glow' : 'text-ink-700 hover:bg-ink-50'
               }`}
             >
-              <HandHeart size={18} /> Quero doar
+              <HandHeart size={18} /> Quero ajudar
             </button>
             <button
               onClick={() => setModo('receber')}
@@ -84,8 +84,8 @@ export default function Calculadora() {
           {/* Pergunta-guia */}
           <p className="mt-8 font-body text-ink-700 text-center">
             {modo === 'doar'
-              ? 'Some os itens que você poderia doar:'
-              : 'Marque o tipo de ajuda que você precisaria:'}
+              ? 'Monte um pedido de exemplo e veja o custo de atender:'
+              : 'Veja que tipo de ajuda você pode pedir:'}
           </p>
 
           {/* Lista */}
@@ -141,30 +141,29 @@ export default function Calculadora() {
             ) : modo === 'doar' ? (
               <>
                 <p className="font-body text-lg text-ink-800 leading-relaxed">
-                  Você tem cerca de{' '}
+                  Com cerca de{' '}
                   <span className="font-display font-extrabold text-3xl text-sun-600 block my-2">{BRL(total)}</span>
-                  em itens parados que podem virar <strong>ajuda real</strong> para{' '}
-                  {totalItens === 1 ? 'uma família' : 'famílias'}.
+                  você atende {totalItens === 1 ? 'o pedido de uma família' : 'pedidos de famílias'} — de forma <strong>concreta e segura</strong>.
                 </p>
                 <p className="font-body text-xs text-ink-400 mt-2 mb-5">
                   * Valores estimados de mercado, apenas para referência.
                 </p>
                 <Link to="/register?type=helper" className="btn-primary inline-flex items-center gap-2">
-                  Quero doar esses itens <ArrowRight size={18} />
+                  Ver pedidos reais <ArrowRight size={18} />
                 </Link>
               </>
             ) : (
               <>
                 <p className="font-body text-lg text-ink-800 leading-relaxed">
-                  Esses itens — somando cerca de{' '}
+                  Você pode pedir itens como esses — cerca de{' '}
                   <span className="font-display font-extrabold text-3xl text-sky-600 block my-2">{BRL(total)}</span>
-                  podem chegar até você por meio de <strong>doadores verificados</strong>, com segurança e dignidade.
+                  em ajuda. Pessoas verificadas podem atender seu pedido, com segurança e dignidade.
                 </p>
                 <p className="font-body text-xs text-ink-400 mt-2 mb-5">
                   * Valores estimados de mercado, apenas para referência.
                 </p>
                 <Link to="/register?type=requester" className="btn-primary inline-flex items-center gap-2">
-                  Quero pedir ajuda <ArrowRight size={18} />
+                  Fazer meu pedido <ArrowRight size={18} />
                 </Link>
               </>
             )}
