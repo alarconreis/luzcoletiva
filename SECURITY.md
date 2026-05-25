@@ -218,6 +218,24 @@ Ativado o GitHub Code Scanning (CodeQL) no repositório. Primeira varredura gero
 
 ---
 
+## Dívida técnica conhecida
+
+### passlib 1.7.4 — sem manutenção (avaliado 2026-05-21)
+
+O `passlib[bcrypt]==1.7.4` não recebe releases desde 2020. Com `bcrypt>=4.1`,
+ele emite um warning cosmético ao tentar ler a versão do bcrypt
+(`AttributeError: module 'bcrypt' has no attribute '__about__'`), capturado
+internamente (`trapped`). **O hash e a verificação de senha funcionam
+normalmente** — é apenas ruído de log, sem impacto funcional ou de segurança.
+
+**Decisão**: aceito por ora. Migrar de `passlib` para uso direto da lib
+`bcrypt` no módulo de autenticação é o caminho correto a médio prazo
+(remove dependência abandonada), mas exige sessão dedicada com testes
+exaustivos — alterações em hashing de senha são de alto risco (erro tranca
+todos os usuários). Não deve ser feito no meio de um ciclo de patching.
+
+---
+
 ## Riscos aceitos (Risk Acceptance)
 
 Decisões documentadas em que vulnerabilidades conhecidas foram analisadas e o risco residual foi aceito, com justificativa técnica.
