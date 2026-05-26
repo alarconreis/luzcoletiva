@@ -174,7 +174,7 @@ function HelperTrack() {
       <Block
         eyebrow="Pra quem oferece"
         title="Pequenos gestos, grandes histórias"
-        text="Você não precisa ter muito pra ajudar. Um livro que você não usa mais, uma roupa em bom estado, um caderno escolar, um apoio prático. Toda forma de presença vale, e a outra pessoa decide o que serve melhor pra ela."
+        text="Você não precisa ter muito pra ajudar. As pessoas pedem coisas concretas — um livro, uma roupa em bom estado, um caderno escolar, um item de bebê. Você vê os pedidos abertos e escolhe um que faça sentido pra você atender."
         illus={<IllusHelp className="w-full max-w-md" />}
       />
 
