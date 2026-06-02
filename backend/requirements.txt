@@ -12,7 +12,7 @@ celery==5.6.3
 redis==5.3.1
 python-multipart==0.0.29
 slowapi==0.1.9
-requests==2.33.0
+requests==2.34.2
 anthropic==0.104.1
 Pillow==12.2.0
 cryptography==46.0.7
